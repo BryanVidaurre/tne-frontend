@@ -1,0 +1,88 @@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Periodo</label>
+        <input class="form-control" type="number" [(ngModel)]="periodo" />
+      </div>
+
+      <div class="col-12 col-md-9 d-flex gap-2 justify-content-md-end">
+        <button class="btn btn-outline-secondary" (click)="recalcular()" [disabled]="loading">
+          Recalcular estado
+        </button>
+        <button class="btn btn-primary" (click)="enviarCorreos()" [disabled]="loading">
+          Enviar correos (solo una vez por periodo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">Subir archivos</div>
+      <div class="card-body">
+        <div class="upload-row">
+          <div class="label">Matrícula (maestro)</div>
+          <input type="file" (change)="onFile('matricula', $event)" />
+
+        </div>
+
+        <div class="upload-row">
+          <div class="label">Pagos (crea procesos)</div>
+          <input type="file" (change)="onFile('pagos', $event)" />
+
+        </div>
+
+        <div class="upload-row">
+          <div class="label">Reporte JUNAEB</div>
+          <input type="file" (change)="onFile('junaeb', $event)" />
+
+        </div>
+
+        <div class="upload-row">
+          <div class="label">Invitados (lista retiro)</div>
+          <input type="file" (change)="onFile('invitados', $event)" />
+
+        </div>
+
+        <div class="upload-row">
+          <div class="label">Asistentes (retiro)</div>
+          <input type="file" (change)="onFile('asistentes', $event)" />
+
+        </div>
+
+        <div class="small text-muted mt-2">
+          Orden recomendado: Matrícula → Pagos → JUNAEB → Invitados → Asistentes.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-success"
+        (click)="subirTodoYCalcular()"
+        [disabled]="loading">
+  Subir todo y calcular
+</button>
+
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">Resultados</div>
+      <div class="card-body">
+        <div *ngIf="results.length === 0" class="text-muted">Sin acciones aún.</div>
+        <div *ngFor="let r of results" class="mb-2">
+          <div class="d-flex justify-content-between">
+            <div>
+              <b>{{ r.tipo }}</b>
+              <span class="badge ms-2" [class.bg-success]="r.ok" [class.bg-danger]="!r.ok">
+                {{ r.ok ? 'OK' : 'ERROR' }}
+              </span>
+            </div>
+          </div>
+          <pre class="mt-1 p-2 bg-light border rounded small">{{ r.message }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

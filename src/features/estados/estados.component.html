@@ -1,0 +1,70 @@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Periodo</label>
+        <input class="form-control" type="number" [(ngModel)]="periodo" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Estado</label>
+        <select class="form-select" [(ngModel)]="estado">
+          <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-5 d-flex justify-content-md-end">
+        <button class="btn btn-primary" (click)="cargar()" [disabled]="loading">Cargar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div *ngIf="loading" class="text-muted">Cargando...</div>
+
+    <div *ngIf="!loading && rows.length === 0" class="text-muted">Sin resultados.</div>
+
+    <div class="table-responsive" *ngIf="!loading && rows.length > 0">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>RUT (sin DV)</th>
+            <th>Pago</th>
+            <th>Estado</th>
+            <th>Pendiente</th>
+            <th>JUNAEB</th>
+            <th>Entrega U</th>
+            <th>Retiro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rows">
+            <td>{{ r.rut_num }}</td>
+            <td>{{ r.fecha_pago || '-' }}</td>
+            <td>
+              <span class="badge bg-secondary">{{ r.estado_final || '-' }}</span>
+            </td>
+            <td>{{ r.pendiente || '-' }}</td>
+            <td>
+              <div class="small">
+                {{ r.proceso_junaeb || '-' }} / {{ r.estado_junaeb || '-' }}
+                <div *ngIf="r.motivo_rechazo" class="text-danger">
+                  {{ r.motivo_rechazo }}
+                </div>
+              </div>
+            </td>
+            <td>{{ r.fecha_entrega_u || '-' }}</td>
+            <td>
+              <div class="small">
+                {{ r.fecha_retiro || '-' }}
+                <div *ngIf="r.medio_ingreso">{{ r.medio_ingreso }}</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
