@@ -63,4 +63,13 @@ export class ApiService {
     const params = new HttpParams().set('periodo', String(periodo));
     return this.http.post(`${this.base}/notificaciones/enviar`, null, { params });
   }
+
+  descargarReporte(periodo: number) {
+    const params = new HttpParams().set('periodo', String(periodo));
+
+    return this.http.get(`${this.base}/reporte/excel`, {
+      params,
+      responseType: 'blob',
+    });
+  }
 }

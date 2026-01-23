@@ -5,6 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 type UploadTipo = 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
+type ActionKey = UploadTipo | 'recalcular' | 'enviar' | 'descargar' | 'subir_todo';
+
+type AlertType = 'info' | 'success' | 'warning' | 'danger';
+type UiAlert = { type: AlertType; text: string };
 
 @Component({
   selector: 'app-dashboard',
@@ -14,60 +18,46 @@ type UploadTipo = 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
 })
 export class DashboardComponent {
   periodo = new Date().getFullYear();
-  loading = false;
 
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
-
   files: Partial<Record<UploadTipo, File>> = {};
+
+  // Estados de UI
+  busy: Partial<Record<ActionKey, boolean>> = {};
+  statusText: Partial<Record<ActionKey, string>> = {};
+  alert: UiAlert | null = null;
 
   constructor(private api: ApiService) {}
 
   onFile(tipo: UploadTipo, ev: Event) {
     const input = ev.target as HTMLInputElement;
     const f = input.files?.[0];
-    if (f) this.files[tipo] = f;
-  }
-
-  async upload(tipo: UploadTipo) {
-    const file = this.files[tipo];
-    if (!file) {
-      this.pushResult(tipo, false, 'Selecciona un archivo primero.');
-      return;
-    }
-
-    this.loading = true;
-    try {
-      const res: any = await this.api.uploadExcel(tipo, this.periodo, file).toPromise();
-      this.pushResult(tipo, true, JSON.stringify(res));
-    } catch (e: any) {
-      this.pushResult(tipo, false, this.errMsg(e));
-    } finally {
-      this.loading = false;
+    if (f) {
+      this.files[tipo] = f;
+      this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
     }
   }
 
-  async recalcular() {
-    this.loading = true;
-    try {
-      const res: any = await this.api.recalcular(this.periodo).toPromise();
-      this.pushResult('recalcular', true, JSON.stringify(res));
-    } catch (e: any) {
-      this.pushResult('recalcular', false, this.errMsg(e));
-    } finally {
-      this.loading = false;
-    }
+  isBusy(...keys: ActionKey[]) {
+    return keys.some((k) => !!this.busy[k]);
   }
 
-  async enviarCorreos() {
-    this.loading = true;
-    try {
-      const res: any = await this.api.enviarCorreos(this.periodo).toPromise();
-      this.pushResult('enviar', true, JSON.stringify(res));
-    } catch (e: any) {
-      this.pushResult('enviar', false, this.errMsg(e));
-    } finally {
-      this.loading = false;
-    }
+  private start(key: ActionKey, text: string) {
+    this.busy[key] = true;
+    this.statusText[key] = text;
+    this.setAlert('info', text);
+  }
+
+  private end(key: ActionKey) {
+    this.busy[key] = false;
+    this.statusText[key] = '';
+  }
+
+  private setAlert(type: AlertType, text: string) {
+    this.alert = { type, text };
+    // opcional: auto-cerrar
+    window.clearTimeout((this as any).__alertTimer);
+    (this as any).__alertTimer = window.setTimeout(() => (this.alert = null), 3500);
   }
 
   private pushResult(tipo: string, ok: boolean, message: string) {
@@ -80,32 +70,129 @@ export class DashboardComponent {
     return String(m);
   }
 
-  async subirTodoYCalcular() {
-  const orden: Array<'matricula'|'pagos'|'junaeb'|'invitados'|'asistentes'> =
-    ['matricula','pagos','junaeb','invitados','asistentes'];
-
-  // Validación mínima (pagos es obligatorio)
-  if (!this.files['pagos']) {
-    this.pushResult('subir_todo', false, 'Falta el archivo de PAGOS.');
-    return;
+  private pretty(t: string) {
+    const map: Record<string, string> = {
+      matricula: 'Matrícula',
+      pagos: 'Pagos',
+      junaeb: 'JUNAEB',
+      invitados: 'Invitados',
+      asistentes: 'Asistentes',
+      recalcular: 'Recalcular',
+      enviar: 'Enviar correos',
+      descargar: 'Descargar reporte',
+      subir_todo: 'Subir todo',
+    };
+    return map[t] ?? t;
   }
 
-  this.loading = true;
-  try {
-    for (const tipo of orden) {
-      const file = this.files[tipo];
-      if (!file) continue; // permite omitir algunos
-
-      const res = await firstValueFrom(this.api.uploadExcel(tipo, this.periodo, file));
-      this.pushResult(tipo, true, JSON.stringify(res));
+  async upload(tipo: UploadTipo) {
+    const file = this.files[tipo];
+    if (!file) {
+      this.pushResult(tipo, false, 'Selecciona un archivo primero.');
+      this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
+      return;
     }
 
-    const recal = await firstValueFrom(this.api.recalcular(this.periodo));
-    this.pushResult('recalcular', true, JSON.stringify(recal));
-  } catch (e: any) {
-    this.pushResult('subir_todo', false, this.errMsg(e));
-  } finally {
-    this.loading = false;
+    this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
+    try {
+      const res = await firstValueFrom(this.api.uploadExcel(tipo, this.periodo, file));
+      this.pushResult(tipo, true, JSON.stringify(res));
+      this.setAlert('success', `${this.pretty(tipo)} subido correctamente.`);
+    } catch (e: any) {
+      const msg = this.errMsg(e);
+      this.pushResult(tipo, false, msg);
+      this.setAlert('danger', `Error al subir ${this.pretty(tipo)}: ${msg}`);
+    } finally {
+      this.end(tipo);
+    }
   }
-}
+
+  async recalcular() {
+    this.start('recalcular', 'Recalculando estado...');
+    try {
+      const res = await firstValueFrom(this.api.recalcular(this.periodo));
+      this.pushResult('recalcular', true, JSON.stringify(res));
+      this.setAlert('success', 'Recalculo completado.');
+    } catch (e: any) {
+      const msg = this.errMsg(e);
+      this.pushResult('recalcular', false, msg);
+      this.setAlert('danger', `Error al recalcular: ${msg}`);
+    } finally {
+      this.end('recalcular');
+    }
+  }
+
+  async enviarCorreos() {
+    this.start('enviar', 'Enviando correos...');
+    try {
+      const res = await firstValueFrom(this.api.enviarCorreos(this.periodo));
+      this.pushResult('enviar', true, JSON.stringify(res));
+      this.setAlert('success', 'Envío de correos iniciado/finalizado correctamente.');
+    } catch (e: any) {
+      const msg = this.errMsg(e);
+      this.pushResult('enviar', false, msg);
+      this.setAlert('danger', `Error al enviar correos: ${msg}`);
+    } finally {
+      this.end('enviar');
+    }
+  }
+
+  async subirTodoYCalcular() {
+    const orden: UploadTipo[] = ['matricula', 'pagos', 'junaeb', 'invitados', 'asistentes'];
+
+    if (!this.files['pagos']) {
+      this.pushResult('subir_todo', false, 'Falta el archivo de PAGOS.');
+      this.setAlert('warning', 'Falta el archivo de PAGOS.');
+      return;
+    }
+
+    this.start('subir_todo', 'Subiendo archivos (secuencial)...');
+    try {
+      for (const tipo of orden) {
+        const file = this.files[tipo];
+        if (!file) continue;
+
+        this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
+        try {
+          const res = await firstValueFrom(this.api.uploadExcel(tipo, this.periodo, file));
+          this.pushResult(tipo, true, JSON.stringify(res));
+          this.setAlert('success', `${this.pretty(tipo)} subido correctamente.`);
+        } finally {
+          this.end(tipo);
+        }
+      }
+
+      await this.recalcular(); // ya maneja su propio feedback
+      this.setAlert('success', 'Proceso completo: subir + recalcular.');
+    } catch (e: any) {
+      const msg = this.errMsg(e);
+      this.pushResult('subir_todo', false, msg);
+      this.setAlert('danger', `Error en subida total: ${msg}`);
+    } finally {
+      this.end('subir_todo');
+    }
+  }
+
+  async descargarReporte() {
+    this.start('descargar', 'Generando y descargando reporte...');
+    try {
+      const blob = await firstValueFrom(this.api.descargarReporte(this.periodo));
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TNE_${this.periodo}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      this.pushResult('descargar', true, 'Reporte descargado.');
+      this.setAlert('success', 'Reporte descargado.');
+    } catch (e: any) {
+      const msg = this.errMsg(e);
+      this.pushResult('descargar', false, msg);
+      this.setAlert('danger', `Error al descargar reporte: ${msg}`);
+    } finally {
+      this.end('descargar');
+    }
+  }
 }

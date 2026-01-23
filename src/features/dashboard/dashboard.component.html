@@ -1,17 +1,32 @@
+
 <div class="card mb-3">
   <div class="card-body">
     <div class="row g-2 align-items-end">
       <div class="col-12 col-md-3">
         <label class="form-label">Periodo</label>
-        <input class="form-control" type="number" [(ngModel)]="periodo" />
+        <input class="form-control" type="number" [(ngModel)]="periodo" [disabled]="isBusy('subir_todo','recalcular','enviar','descargar')" />
       </div>
 
       <div class="col-12 col-md-9 d-flex gap-2 justify-content-md-end">
-        <button class="btn btn-outline-secondary" (click)="recalcular()" [disabled]="loading">
+        <button class="btn btn-outline-secondary"
+                (click)="recalcular()"
+                [disabled]="isBusy('recalcular','subir_todo')">
+          <span *ngIf="busy.recalcular" class="spinner-border spinner-border-sm me-2"></span>
           Recalcular estado
         </button>
-        <button class="btn btn-primary" (click)="enviarCorreos()" [disabled]="loading">
-          Enviar correos (solo una vez por periodo)
+
+        <button class="btn btn-primary"
+                (click)="enviarCorreos()"
+                [disabled]="isBusy('enviar','subir_todo')">
+          <span *ngIf="busy.enviar" class="spinner-border spinner-border-sm me-2"></span>
+          Enviar correos
+        </button>
+
+        <button class="btn btn-primary"
+                (click)="descargarReporte()"
+                [disabled]="isBusy('descargar','subir_todo')">
+          <span *ngIf="busy.descargar" class="spinner-border spinner-border-sm me-2"></span>
+          Descargar reporte
         </button>
       </div>
     </div>
@@ -21,50 +36,83 @@
 <div class="row g-3">
   <div class="col-12 col-lg-6">
     <div class="card">
-      <div class="card-header">Subir archivos</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Subir archivos</span>
+        <span *ngIf="busy.subir_todo" class="small text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Ejecutando...
+        </span>
+      </div>
+
       <div class="card-body">
         <div class="upload-row">
           <div class="label">Matrícula (maestro)</div>
-          <input type="file" (change)="onFile('matricula', $event)" />
-
+          <input type="file" (change)="onFile('matricula', $event)" [disabled]="isBusy('subir_todo','matricula')" />
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="upload('matricula')"
+                  [disabled]="isBusy('subir_todo','matricula')">
+            <span *ngIf="busy.matricula" class="spinner-border spinner-border-sm me-2"></span>
+            Subir
+          </button>
         </div>
 
         <div class="upload-row">
           <div class="label">Pagos (crea procesos)</div>
-          <input type="file" (change)="onFile('pagos', $event)" />
-
+          <input type="file" (change)="onFile('pagos', $event)" [disabled]="isBusy('subir_todo','pagos')" />
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="upload('pagos')"
+                  [disabled]="isBusy('subir_todo','pagos')">
+            <span *ngIf="busy.pagos" class="spinner-border spinner-border-sm me-2"></span>
+            Subir
+          </button>
         </div>
 
         <div class="upload-row">
           <div class="label">Reporte JUNAEB</div>
-          <input type="file" (change)="onFile('junaeb', $event)" />
-
+          <input type="file" (change)="onFile('junaeb', $event)" [disabled]="isBusy('subir_todo','junaeb')" />
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="upload('junaeb')"
+                  [disabled]="isBusy('subir_todo','junaeb')">
+            <span *ngIf="busy.junaeb" class="spinner-border spinner-border-sm me-2"></span>
+            Subir
+          </button>
         </div>
 
         <div class="upload-row">
           <div class="label">Invitados (lista retiro)</div>
-          <input type="file" (change)="onFile('invitados', $event)" />
-
+          <input type="file" (change)="onFile('invitados', $event)" [disabled]="isBusy('subir_todo','invitados')" />
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="upload('invitados')"
+                  [disabled]="isBusy('subir_todo','invitados')">
+            <span *ngIf="busy.invitados" class="spinner-border spinner-border-sm me-2"></span>
+            Subir
+          </button>
         </div>
 
         <div class="upload-row">
           <div class="label">Asistentes (retiro)</div>
-          <input type="file" (change)="onFile('asistentes', $event)" />
-
+          <input type="file" (change)="onFile('asistentes', $event)" [disabled]="isBusy('subir_todo','asistentes')" />
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="upload('asistentes')"
+                  [disabled]="isBusy('subir_todo','asistentes')">
+            <span *ngIf="busy.asistentes" class="spinner-border spinner-border-sm me-2"></span>
+            Subir
+          </button>
         </div>
 
         <div class="small text-muted mt-2">
           Orden recomendado: Matrícula → Pagos → JUNAEB → Invitados → Asistentes.
         </div>
+
+        <button class="btn btn-success mt-3 w-100"
+                (click)="subirTodoYCalcular()"
+                [disabled]="isBusy('subir_todo','recalcular','enviar','descargar','matricula','pagos','junaeb','invitados','asistentes')">
+          <span *ngIf="busy.subir_todo" class="spinner-border spinner-border-sm me-2"></span>
+          Subir todo y calcular
+        </button>
       </div>
     </div>
   </div>
-
-  <button class="btn btn-success"
-        (click)="subirTodoYCalcular()"
-        [disabled]="loading">
-  Subir todo y calcular
-</button>
 
   <div class="col-12 col-lg-6">
     <div class="card">

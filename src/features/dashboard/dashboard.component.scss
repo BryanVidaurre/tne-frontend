@@ -1,211 +1,137 @@
-// Variables
-$border-radius: 0.5rem;
-$spacing-sm: 0.5rem;
-$spacing-md: 1rem;
-$spacing-lg: 1.5rem;
-$transition: all 0.2s ease;
+/* dashboard.component.scss */
 
-// Colors (puedes ajustarlas según tu tema)
-$color-border: #e0e0e0;
-$color-bg-light: #f8f9fa;
-$color-text-muted: #6c757d;
-$color-hover: #f1f3f5;
-
+/* Ajusta el “feel” general de cards y botones (sin romper Bootstrap) */
 .card {
-  border: 1px solid $color-border;
-  border-radius: $border-radius;
-  transition: $transition;
-
-  &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-
-  .card-header {
-    background-color: transparent;
-    border-bottom: 1px solid $color-border;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    padding: $spacing-md $spacing-lg;
-  }
-
-  .card-body {
-    padding: $spacing-lg;
-  }
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
-// Upload section
-.upload-row {
-  display: flex;
-  align-items: center;
-  padding: $spacing-md 0;
-  border-bottom: 1px solid lighten($color-border, 5%);
-  transition: $transition;
-
-  &:last-of-type {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background-color: $color-hover;
-    margin: 0 (-$spacing-md);
-    padding-left: $spacing-md;
-    padding-right: $spacing-md;
-    border-radius: 4px;
-  }
-
-  .label {
-    flex: 0 0 200px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #495057;
-  }
-
-  input[type="file"] {
-    flex: 1;
-    font-size: 0.875rem;
-    
-    &::file-selector-button {
-      padding: 0.375rem 0.75rem;
-      margin-right: $spacing-md;
-      border: 1px solid $color-border;
-      border-radius: 0.25rem;
-      background-color: white;
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: $transition;
-
-      &:hover {
-        background-color: $color-bg-light;
-        border-color: darken($color-border, 10%);
-      }
-    }
-  }
+.card-header {
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+  padding: 0.85rem 1rem;
 }
 
-// Results section
-.results-container {
-  .result-item {
-    padding: $spacing-md;
-    border-radius: 0.375rem;
-    background-color: white;
-    border: 1px solid $color-border;
-    transition: $transition;
-
-    &:hover {
-      border-color: darken($color-border, 10%);
-    }
-
-    .badge {
-      font-weight: 500;
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-    }
-
-    pre {
-      margin: 0;
-      font-size: 0.8125rem;
-      line-height: 1.5;
-      max-height: 200px;
-      overflow-y: auto;
-      
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: darken($color-border, 10%);
-        border-radius: 3px;
-
-        &:hover {
-          background: darken($color-border, 20%);
-        }
-      }
-    }
-  }
+.card-body {
+  padding: 1rem;
 }
 
-// Buttons
-.btn {
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: $transition;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-// Form controls
+/* Inputs */
 .form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: $spacing-sm;
-  color: #495057;
+  font-weight: 600;
 }
 
 .form-control {
-  font-size: 0.875rem;
-  border-radius: 0.375rem;
-  border: 1px solid $color-border;
-  transition: $transition;
+  border-radius: 12px;
+  border-color: rgba(0, 0, 0, 0.16);
+}
 
-  &:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+.form-control:focus {
+  border-color: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+}
+
+/* Botones */
+.btn {
+  border-radius: 12px;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+.btn-primary,
+.btn-success,
+.btn-outline-secondary,
+.btn-outline-primary {
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(0px);
+  box-shadow: none;
+}
+
+/* Separación de botones en desktop */
+@media (min-width: 768px) {
+  .col-md-9.d-flex {
+    flex-wrap: wrap;
   }
 }
 
-// Utilities
-.text-muted {
-  color: $color-text-muted !important;
+/* Upload rows */
+.upload-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+
+  .label {
+    font-weight: 600;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    padding: 0.35rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    background: #fff;
+  }
 }
 
-.bg-light {
-  background-color: $color-bg-light !important;
+.upload-row:last-of-type {
+  border-bottom: none;
 }
 
-// Responsive adjustments
-@media (max-width: 768px) {
+/* En mobile, apilar todo */
+@media (max-width: 992px) {
   .upload-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: $spacing-sm;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
 
-    .label {
-      flex: none;
+    button {
       width: 100%;
     }
-
-    input[type="file"] {
-      width: 100%;
-    }
-  }
-
-  .card-body {
-    padding: $spacing-md;
   }
 }
 
-// Loading state
-.loading {
-  position: relative;
-  pointer-events: none;
+/* Resultados */
+pre {
+  margin: 0;
+  border-radius: 12px !important;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    border-radius: $border-radius;
-  }
+/* Badge más “pill” */
+.badge {
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  font-weight: 600;
+}
+
+/* Spinners */
+.spinner-border-sm {
+  vertical-align: -0.15em;
+}
+
+/* Mejoras pequeñas */
+.small.text-muted {
+  line-height: 1.35;
+}
+
+.row.g-2.align-items-end .form-control {
+  height: 42px;
 }
