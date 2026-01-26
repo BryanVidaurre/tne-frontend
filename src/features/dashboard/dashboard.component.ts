@@ -4,6 +4,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
+declare const XLSX: {
+  read(data: ArrayBuffer, opts: { type: string }): { SheetNames: string[]; Sheets: any };
+  utils: { sheet_to_json: (sheet: any, opts: { header: number; blankrows: boolean }) => any };
+};
+
 type UploadTipo = 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
 type ActionKey = UploadTipo | 'recalcular' | 'enviar' | 'descargar' | 'subir_todo';
 
@@ -21,6 +26,27 @@ export class DashboardComponent {
 
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
+  fileErrors: Partial<Record<UploadTipo, string>> = {};
+  readonly requiredHeaders: Record<UploadTipo, string[]> = {
+    pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
+    matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
+    junaeb: [
+      'PERIODO',
+      'PROCESO',
+      'RUN',
+      'DV_RUN',
+      'ESTADO_TNE',
+      'MOTIVO_RECHAZO',
+      'FECHA_INSCRIPCION',
+      'FECHA_ATENCION',
+      'FECHA_ENTREGA',
+      'NUMERO_OT',
+      'FOLIO_ENTREGA',
+      'OBSERVACION',
+    ],
+    invitados: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL'],
+    asistentes: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL', 'MEDIO INGRESO', 'FECHA'],
+  };
 
   // Estados de UI
   busy: Partial<Record<ActionKey, boolean>> = {};
@@ -29,11 +55,22 @@ export class DashboardComponent {
 
   constructor(private api: ApiService) {}
 
-  onFile(tipo: UploadTipo, ev: Event) {
+  async onFile(tipo: UploadTipo, ev: Event) {
     const input = ev.target as HTMLInputElement;
     const f = input.files?.[0];
     if (f) {
+      const validationError = await this.validateExcelFile(tipo, f);
+      if (validationError) {
+        delete this.files[tipo];
+        this.fileErrors[tipo] = validationError;
+        input.value = '';
+        this.pushResult(tipo, false, validationError);
+        this.setAlert('warning', validationError);
+        return;
+      }
+
       this.files[tipo] = f;
+      this.fileErrors[tipo] = '';
       this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
     }
   }
@@ -87,9 +124,15 @@ export class DashboardComponent {
 
   async upload(tipo: UploadTipo) {
     const file = this.files[tipo];
+    const validationError = this.fileErrors[tipo];
     if (!file) {
       this.pushResult(tipo, false, 'Selecciona un archivo primero.');
       this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
+      return;
+    }
+    if (validationError) {
+      this.pushResult(tipo, false, validationError);
+      this.setAlert('warning', validationError);
       return;
     }
 
@@ -145,12 +188,24 @@ export class DashboardComponent {
       this.setAlert('warning', 'Falta el archivo de PAGOS.');
       return;
     }
+    if (this.fileErrors['pagos']) {
+      const msg = this.fileErrors['pagos'] as string;
+      this.pushResult('subir_todo', false, msg);
+      this.setAlert('warning', msg);
+      return;
+    }
 
     this.start('subir_todo', 'Subiendo archivos (secuencial)...');
     try {
       for (const tipo of orden) {
         const file = this.files[tipo];
         if (!file) continue;
+        if (this.fileErrors[tipo]) {
+          const msg = this.fileErrors[tipo] as string;
+          this.pushResult(tipo, false, msg);
+          this.setAlert('warning', msg);
+          continue;
+        }
 
         this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
         try {
@@ -194,5 +249,68 @@ export class DashboardComponent {
     } finally {
       this.end('descargar');
     }
+  }
+
+  private async validateExcelFile(tipo: UploadTipo, file: File): Promise<string | null> {
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      return `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.`;
+    }
+
+    try {
+      if (typeof XLSX === 'undefined') {
+        return `No está disponible el lector de Excel en el navegador.`;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        return `El archivo de ${this.pretty(tipo)} no tiene hojas.`;
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as Array<
+        Array<string | number | null>
+      >;
+
+      const headerRow = rows.find((row) => row && row.length > 0) ?? [];
+      const headers = headerRow
+        .map((value) => this.normalizeHeader(value))
+        .filter((value) => value.length > 0);
+
+      if (headers.length === 0) {
+        return `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`;
+      }
+
+      const requiredLabels = this.requiredHeaders[tipo];
+      const expected = requiredLabels.map((col) => this.normalizeHeader(col));
+      const missing = requiredLabels.filter(
+        (label, index) => !headers.includes(expected[index]),
+      );
+
+      if (missing.length > 0) {
+        return `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
+          ', ',
+        )}.`;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error leyendo Excel', error);
+      return `No se pudo leer el archivo de ${this.pretty(tipo)}. Verifica que sea un Excel válido.`;
+    }
+  }
+
+  private normalizeHeader(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\s-]+/g, '_')
+      .replace(/[()\.]/g, '')
+      .trim();
   }
 }

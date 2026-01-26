@@ -18,6 +18,18 @@
   padding: 1rem;
 }
 
+.dashboard-header {
+  .page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+}
+
+.alert {
+  border-radius: 14px;
+}
+
 /* Inputs */
 .form-label {
   font-weight: 600;
@@ -67,14 +79,12 @@
 }
 
 /* Upload rows */
-.upload-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-
-  padding: 0.75rem 0;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+.upload-item {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 0.85rem 0.9rem;
+  background: #fff;
+  margin-bottom: 0.9rem;
 
   .label {
     font-weight: 600;
@@ -89,13 +99,41 @@
   }
 }
 
-.upload-row:last-of-type {
-  border-bottom: none;
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+}
+
+.upload-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.upload-meta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.order-hint {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(13, 110, 253, 0.08);
+  margin-top: 0.5rem;
+
+  .order-steps {
+    font-weight: 600;
+    color: #0b5ed7;
+  }
 }
 
 /* En mobile, apilar todo */
 @media (max-width: 992px) {
-  .upload-row {
+  .upload-body {
     grid-template-columns: 1fr;
     gap: 0.5rem;
 
