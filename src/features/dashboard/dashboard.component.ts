@@ -56,10 +56,20 @@ export class DashboardComponent {
 
   constructor(private api: ApiService) {}
 
-  onFile(tipo: UploadTipo, ev: Event) {
+  async onFile(tipo: UploadTipo, ev: Event) {
     const input = ev.target as HTMLInputElement;
     const f = input.files?.[0];
     if (f) {
+      const validationError = await this.validateExcelFile(tipo, f);
+      if (validationError) {
+        delete this.files[tipo];
+        this.fileErrors[tipo] = validationError;
+        input.value = '';
+        this.pushResult(tipo, false, validationError);
+        this.setAlert('warning', validationError);
+        return;
+      }
+
       this.files[tipo] = f;
       this.fileErrors[tipo] = '';
       this.uploadAttempts[tipo] = 0;
@@ -116,6 +126,7 @@ export class DashboardComponent {
 
   async upload(tipo: UploadTipo) {
     const file = this.files[tipo];
+    const validationError = this.fileErrors[tipo];
     if (!file) {
       this.pushResult(tipo, false, 'Selecciona un archivo primero.');
       this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
