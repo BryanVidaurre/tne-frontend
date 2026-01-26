@@ -4,6 +4,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
+declare const XLSX: {
+  read(data: ArrayBuffer, opts: { type: string }): { SheetNames: string[]; Sheets: any };
+  utils: { sheet_to_json: (sheet: any, opts: { header: number; blankrows: boolean }) => any };
+};
+
 type UploadTipo = 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
 type ActionKey = UploadTipo | 'recalcular' | 'enviar' | 'descargar' | 'subir_todo';
 
@@ -21,6 +26,28 @@ export class DashboardComponent {
 
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
+  fileErrors: Partial<Record<UploadTipo, string>> = {};
+  uploadAttempts: Partial<Record<UploadTipo, number>> = {};
+  readonly requiredHeaders: Record<UploadTipo, string[]> = {
+    pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
+    matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
+    junaeb: [
+      'PERIODO',
+      'PROCESO',
+      'RUN',
+      'DV_RUN',
+      'ESTADO_TNE',
+      'MOTIVO_RECHAZO',
+      'FECHA_INSCRIPCION',
+      'FECHA_ATENCION',
+      'FECHA_ENTREGA',
+      'NUMERO_OT',
+      'FOLIO_ENTREGA',
+      'OBSERVACION',
+    ],
+    invitados: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL'],
+    asistentes: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL', 'MEDIO INGRESO', 'FECHA'],
+  };
 
   // Estados de UI
   busy: Partial<Record<ActionKey, boolean>> = {};
@@ -34,6 +61,8 @@ export class DashboardComponent {
     const f = input.files?.[0];
     if (f) {
       this.files[tipo] = f;
+      this.fileErrors[tipo] = '';
+      this.uploadAttempts[tipo] = 0;
       this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
     }
   }
@@ -92,6 +121,8 @@ export class DashboardComponent {
       this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
       return;
     }
+    const canUpload = await this.validateBeforeUpload(tipo, file);
+    if (!canUpload) return;
 
     this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
     try {
@@ -145,12 +176,19 @@ export class DashboardComponent {
       this.setAlert('warning', 'Falta el archivo de PAGOS.');
       return;
     }
+    const pagosFile = this.files['pagos'];
+    if (pagosFile) {
+      const canUpload = await this.validateBeforeUpload('pagos', pagosFile);
+      if (!canUpload) return;
+    }
 
     this.start('subir_todo', 'Subiendo archivos (secuencial)...');
     try {
       for (const tipo of orden) {
         const file = this.files[tipo];
         if (!file) continue;
+        const canUpload = await this.validateBeforeUpload(tipo, file);
+        if (!canUpload) continue;
 
         this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
         try {
@@ -194,5 +232,103 @@ export class DashboardComponent {
     } finally {
       this.end('descargar');
     }
+  }
+
+  private async validateBeforeUpload(tipo: UploadTipo, file: File): Promise<boolean> {
+    const attempt = (this.uploadAttempts[tipo] ?? 0) + 1;
+    this.uploadAttempts[tipo] = attempt;
+
+    const { missing, error } = await this.checkExcelHeaders(tipo, file);
+    if (error) {
+      this.fileErrors[tipo] = error;
+      this.pushResult(tipo, false, error);
+      this.setAlert('warning', error);
+      return false;
+    }
+    if (missing.length > 0) {
+      const message =
+        attempt >= 2
+          ? `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
+              ', ',
+            )}.`
+          : `El archivo de ${this.pretty(
+              tipo,
+            )} no cumple la estructura requerida. Intenta subir nuevamente para ver las columnas faltantes.`;
+      this.fileErrors[tipo] = message;
+      this.pushResult(tipo, false, message);
+      this.setAlert('warning', message);
+      return false;
+    }
+
+    this.fileErrors[tipo] = '';
+    return true;
+  }
+
+  private async checkExcelHeaders(
+    tipo: UploadTipo,
+    file: File,
+  ): Promise<{ missing: string[]; error: string | null }> {
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      return { missing: [], error: `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.` };
+    }
+
+    try {
+      if (typeof XLSX === 'undefined') {
+        return { missing: [], error: `No está disponible el lector de Excel en el navegador.` };
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        return { missing: [], error: `El archivo de ${this.pretty(tipo)} no tiene hojas.` };
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as Array<
+        Array<string | number | null>
+      >;
+
+      const headerRow = rows.find((row) => row && row.length > 0) ?? [];
+      const headers = headerRow
+        .map((value) => this.normalizeHeader(value))
+        .filter((value) => value.length > 0);
+
+      if (headers.length === 0) {
+        return {
+          missing: [],
+          error: `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`,
+        };
+      }
+
+      const requiredLabels = this.requiredHeaders[tipo];
+      const expected = requiredLabels.map((col) => this.normalizeHeader(col));
+      const missing = requiredLabels.filter(
+        (label, index) => !headers.includes(expected[index]),
+      );
+
+      return { missing, error: null };
+    } catch (error) {
+      console.error('Error leyendo Excel', error);
+      return {
+        missing: [],
+        error: `No se pudo leer el archivo de ${this.pretty(
+          tipo,
+        )}. Verifica que sea un Excel válido.`,
+      };
+    }
+  }
+
+  private normalizeHeader(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\s-]+/g, '_')
+      .replace(/[()\.]/g, '')
+      .trim();
   }
 }
