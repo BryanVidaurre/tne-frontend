@@ -21,7 +21,7 @@ declare const XLSX: {
   utils: { sheet_to_json: (sheet: any, opts: { header: number; blankrows: boolean }) => any };
 };
 
-type UploadTipo = 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
+type UploadTipo = 'pagos' | 'pago_sello' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes';
 type ActionKey = UploadTipo | 'recalcular' | 'enviar' | 'descargar' | 'subir_todo';
 
 type AlertType = 'info' | 'success' | 'warning' | 'danger';
@@ -52,7 +52,7 @@ export class DashboardComponent {
   periodo = new Date().getFullYear();
   currentYear = new Date().getFullYear();
 
-  readonly tipos: UploadTipo[] = ['matricula', 'pagos', 'junaeb', 'invitados', 'asistentes'];
+  readonly tipos: UploadTipo[] = ['matricula', 'pagos', 'pago_sello', 'junaeb', 'invitados', 'asistentes'];
 
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
@@ -61,6 +61,7 @@ export class DashboardComponent {
 
   readonly requiredHeaders: Record<UploadTipo, string[]> = {
     pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
+    pago_sello: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
     matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
     junaeb: [
       'PERIODO',
@@ -156,6 +157,7 @@ export class DashboardComponent {
     const map: Record<string, string> = {
       matricula: 'Matrícula',
       pagos: 'Pagos',
+      pago_sello: 'Pago sello',
       junaeb: 'JUNAEB',
       invitados: 'Invitados',
       asistentes: 'Asistentes',
@@ -283,7 +285,14 @@ export class DashboardComponent {
   }
 
   async subirTodoYCalcular() {
-    const orden: UploadTipo[] = ['matricula', 'pagos', 'junaeb', 'invitados', 'asistentes'];
+    const orden: UploadTipo[] = [
+      'matricula',
+      'pagos',
+      'pago_sello',
+      'junaeb',
+      'invitados',
+      'asistentes',
+    ];
 
     if (!this.files['pagos']) {
       this.pushResult('subir_todo', false, 'Falta el archivo de PAGOS.');
