@@ -1,134 +1,304 @@
 
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="row g-2 align-items-end">
-      <div class="col-12 col-md-3">
-        <label class="form-label">Periodo</label>
-        <input class="form-control" type="number" [(ngModel)]="periodo" [disabled]="isBusy('subir_todo','recalcular','enviar','descargar')" />
+<section class="dashboard-hero">
+  <div class="hero-content">
+    <div>
+      <p class="hero-eyebrow">Centro de carga TNE</p>
+      <h1>Sube y valida tus archivos en minutos.</h1>
+      <p class="hero-subtitle">
+        Cada Excel se valida antes de enviarlo. Si falta una columna, lo verás al instante.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <div class="periodo-field">
+        <label class="form-label mb-1">Periodo</label>
+        <input
+          class="form-control"
+          type="number"
+          [(ngModel)]="periodo"
+          [disabled]="isBusy('subir_todo','recalcular','enviar','descargar')"
+        />
       </div>
-
-      <div class="col-12 col-md-9 d-flex gap-2 justify-content-md-end">
-        <button class="btn btn-outline-secondary"
-                (click)="recalcular()"
-                [disabled]="isBusy('recalcular','subir_todo')">
+      <div class="hero-buttons">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="recalcular()"
+          [disabled]="isBusy('recalcular','subir_todo')"
+        >
           <span *ngIf="busy.recalcular" class="spinner-border spinner-border-sm me-2"></span>
           Recalcular estado
         </button>
-
-        <button class="btn btn-primary"
-                (click)="enviarCorreos()"
-                [disabled]="isBusy('enviar','subir_todo')">
+        <button
+          class="btn btn-primary"
+          (click)="enviarCorreos()"
+          [disabled]="isBusy('enviar','subir_todo')"
+        >
           <span *ngIf="busy.enviar" class="spinner-border spinner-border-sm me-2"></span>
           Enviar correos
         </button>
-
-        <button class="btn btn-primary"
-                (click)="descargarReporte()"
-                [disabled]="isBusy('descargar','subir_todo')">
+        <button
+          class="btn btn-primary"
+          (click)="descargarReporte()"
+          [disabled]="isBusy('descargar','subir_todo')"
+        >
           <span *ngIf="busy.descargar" class="spinner-border spinner-border-sm me-2"></span>
           Descargar reporte
         </button>
       </div>
     </div>
   </div>
+  <div class="hero-steps">
+    <div class="hero-step">
+      <span>1</span>
+      <p>Sube Matrícula y Pagos primero.</p>
+    </div>
+    <div class="hero-step">
+      <span>2</span>
+      <p>Continúa con JUNAEB, Invitados y Asistentes.</p>
+    </div>
+    <div class="hero-step">
+      <span>3</span>
+      <p>Finaliza con “Subir todo y calcular”.</p>
+    </div>
+  </div>
+</section>
+
+<div
+  *ngIf="alert"
+  class="alert dashboard-alert"
+  [class.alert-success]="alert.type === 'success'"
+  [class.alert-danger]="alert.type === 'danger'"
+  [class.alert-warning]="alert.type === 'warning'"
+  [class.alert-info]="alert.type === 'info'"
+>
+  {{ alert.text }}
 </div>
 
 <div class="row g-3">
-  <div class="col-12 col-lg-6">
+  <div class="col-12 col-lg-7">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Subir archivos</span>
+        <span>Subida de archivos</span>
         <span *ngIf="busy.subir_todo" class="small text-muted">
           <span class="spinner-border spinner-border-sm me-2"></span>
           Ejecutando...
         </span>
       </div>
 
-      <div class="card-body">
-        <div class="upload-row">
-          <div class="label">Matrícula (maestro)</div>
-          <input type="file" (change)="onFile('matricula', $event)" [disabled]="isBusy('subir_todo','matricula')" />
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="upload('matricula')"
-                  [disabled]="isBusy('subir_todo','matricula')">
-            <span *ngIf="busy.matricula" class="spinner-border spinner-border-sm me-2"></span>
-            Subir
+      <div class="card-body upload-stack">
+        <div class="upload-panel">
+          <div class="upload-panel-head">
+            <div>
+              <div class="label">Matrícula (maestro)</div>
+              <p>Incluye los datos principales de estudiantes.</p>
+            </div>
+            <span
+              class="status-pill"
+              [class.is-error]="fileErrors.matricula"
+              [class.is-ready]="files.matricula && !fileErrors.matricula"
+            >
+              {{ fileErrors.matricula ? 'Error' : files.matricula ? 'Listo' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="upload-panel-body">
+            <div class="upload-input">
+              <input type="file" accept=".xlsx" (change)="onFile('matricula', $event)" [disabled]="isBusy('subir_todo','matricula')" />
+              <span>Arrastra o selecciona el Excel</span>
+            </div>
+            <div class="upload-info">
+              <div class="small">Columnas requeridas:</div>
+              <div class="chip-list">
+                <span class="chip" *ngFor="let header of requiredHeaders.matricula">{{ header }}</span>
+              </div>
+              <div *ngIf="files.matricula" class="small">Archivo: <strong>{{ files.matricula?.name }}</strong></div>
+              <div *ngIf="fileErrors.matricula" class="small text-danger">{{ fileErrors.matricula }}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    (click)="upload('matricula')"
+                    [disabled]="isBusy('subir_todo','matricula') || !files.matricula || fileErrors.matricula">
+              <span *ngIf="busy.matricula" class="spinner-border spinner-border-sm me-2"></span>
+              Subir matrícula
+            </button>
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="upload-panel-head">
+            <div>
+              <div class="label">Pagos (crea procesos)</div>
+              <p>Define quién pagó y habilita el flujo.</p>
+            </div>
+            <span
+              class="status-pill"
+              [class.is-error]="fileErrors.pagos"
+              [class.is-ready]="files.pagos && !fileErrors.pagos"
+            >
+              {{ fileErrors.pagos ? 'Error' : files.pagos ? 'Listo' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="upload-panel-body">
+            <div class="upload-input">
+              <input type="file" accept=".xlsx" (change)="onFile('pagos', $event)" [disabled]="isBusy('subir_todo','pagos')" />
+              <span>Arrastra o selecciona el Excel</span>
+            </div>
+            <div class="upload-info">
+              <div class="small">Columnas requeridas:</div>
+              <div class="chip-list">
+                <span class="chip" *ngFor="let header of requiredHeaders.pagos">{{ header }}</span>
+              </div>
+              <div *ngIf="files.pagos" class="small">Archivo: <strong>{{ files.pagos?.name }}</strong></div>
+              <div *ngIf="fileErrors.pagos" class="small text-danger">{{ fileErrors.pagos }}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    (click)="upload('pagos')"
+                    [disabled]="isBusy('subir_todo','pagos') || !files.pagos || fileErrors.pagos">
+              <span *ngIf="busy.pagos" class="spinner-border spinner-border-sm me-2"></span>
+              Subir pagos
+            </button>
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="upload-panel-head">
+            <div>
+              <div class="label">Reporte JUNAEB</div>
+              <p>Estado oficial del proceso y fechas asociadas.</p>
+            </div>
+            <span
+              class="status-pill"
+              [class.is-error]="fileErrors.junaeb"
+              [class.is-ready]="files.junaeb && !fileErrors.junaeb"
+            >
+              {{ fileErrors.junaeb ? 'Error' : files.junaeb ? 'Listo' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="upload-panel-body">
+            <div class="upload-input">
+              <input type="file" accept=".xlsx" (change)="onFile('junaeb', $event)" [disabled]="isBusy('subir_todo','junaeb')" />
+              <span>Arrastra o selecciona el Excel</span>
+            </div>
+            <div class="upload-info">
+              <div class="small">Columnas requeridas:</div>
+              <div class="chip-list">
+                <span class="chip" *ngFor="let header of requiredHeaders.junaeb">{{ header }}</span>
+              </div>
+              <div *ngIf="files.junaeb" class="small">Archivo: <strong>{{ files.junaeb?.name }}</strong></div>
+              <div *ngIf="fileErrors.junaeb" class="small text-danger">{{ fileErrors.junaeb }}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    (click)="upload('junaeb')"
+                    [disabled]="isBusy('subir_todo','junaeb') || !files.junaeb || fileErrors.junaeb">
+              <span *ngIf="busy.junaeb" class="spinner-border spinner-border-sm me-2"></span>
+              Subir JUNAEB
+            </button>
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="upload-panel-head">
+            <div>
+              <div class="label">Invitados (lista retiro)</div>
+              <p>Marca quienes están habilitados para retiro.</p>
+            </div>
+            <span
+              class="status-pill"
+              [class.is-error]="fileErrors.invitados"
+              [class.is-ready]="files.invitados && !fileErrors.invitados"
+            >
+              {{ fileErrors.invitados ? 'Error' : files.invitados ? 'Listo' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="upload-panel-body">
+            <div class="upload-input">
+              <input type="file" accept=".xlsx" (change)="onFile('invitados', $event)" [disabled]="isBusy('subir_todo','invitados')" />
+              <span>Arrastra o selecciona el Excel</span>
+            </div>
+            <div class="upload-info">
+              <div class="small">Columnas requeridas:</div>
+              <div class="chip-list">
+                <span class="chip" *ngFor="let header of requiredHeaders.invitados">{{ header }}</span>
+              </div>
+              <div *ngIf="files.invitados" class="small">Archivo: <strong>{{ files.invitados?.name }}</strong></div>
+              <div *ngIf="fileErrors.invitados" class="small text-danger">{{ fileErrors.invitados }}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    (click)="upload('invitados')"
+                    [disabled]="isBusy('subir_todo','invitados') || !files.invitados || fileErrors.invitados">
+              <span *ngIf="busy.invitados" class="spinner-border spinner-border-sm me-2"></span>
+              Subir invitados
+            </button>
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="upload-panel-head">
+            <div>
+              <div class="label">Asistentes (retiro)</div>
+              <p>Confirma retiros presenciales y medio de ingreso.</p>
+            </div>
+            <span
+              class="status-pill"
+              [class.is-error]="fileErrors.asistentes"
+              [class.is-ready]="files.asistentes && !fileErrors.asistentes"
+            >
+              {{ fileErrors.asistentes ? 'Error' : files.asistentes ? 'Listo' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="upload-panel-body">
+            <div class="upload-input">
+              <input type="file" accept=".xlsx" (change)="onFile('asistentes', $event)" [disabled]="isBusy('subir_todo','asistentes')" />
+              <span>Arrastra o selecciona el Excel</span>
+            </div>
+            <div class="upload-info">
+              <div class="small">Columnas requeridas:</div>
+              <div class="chip-list">
+                <span class="chip" *ngFor="let header of requiredHeaders.asistentes">{{ header }}</span>
+              </div>
+              <div *ngIf="files.asistentes" class="small">Archivo: <strong>{{ files.asistentes?.name }}</strong></div>
+              <div *ngIf="fileErrors.asistentes" class="small text-danger">{{ fileErrors.asistentes }}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    (click)="upload('asistentes')"
+                    [disabled]="isBusy('subir_todo','asistentes') || !files.asistentes || fileErrors.asistentes">
+              <span *ngIf="busy.asistentes" class="spinner-border spinner-border-sm me-2"></span>
+              Subir asistentes
+            </button>
+          </div>
+        </div>
+
+        <div class="upload-footer">
+          <div class="order-hint">
+            <div class="text-muted small">Orden recomendado:</div>
+            <div class="order-steps">Matrícula → Pagos → JUNAEB → Invitados → Asistentes</div>
+          </div>
+          <button class="btn btn-success"
+                  (click)="subirTodoYCalcular()"
+                  [disabled]="isBusy('subir_todo','recalcular','enviar','descargar','matricula','pagos','junaeb','invitados','asistentes') || !!fileErrors.pagos">
+            <span *ngIf="busy.subir_todo" class="spinner-border spinner-border-sm me-2"></span>
+            Subir todo y calcular
           </button>
         </div>
-
-        <div class="upload-row">
-          <div class="label">Pagos (crea procesos)</div>
-          <input type="file" (change)="onFile('pagos', $event)" [disabled]="isBusy('subir_todo','pagos')" />
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="upload('pagos')"
-                  [disabled]="isBusy('subir_todo','pagos')">
-            <span *ngIf="busy.pagos" class="spinner-border spinner-border-sm me-2"></span>
-            Subir
-          </button>
-        </div>
-
-        <div class="upload-row">
-          <div class="label">Reporte JUNAEB</div>
-          <input type="file" (change)="onFile('junaeb', $event)" [disabled]="isBusy('subir_todo','junaeb')" />
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="upload('junaeb')"
-                  [disabled]="isBusy('subir_todo','junaeb')">
-            <span *ngIf="busy.junaeb" class="spinner-border spinner-border-sm me-2"></span>
-            Subir
-          </button>
-        </div>
-
-        <div class="upload-row">
-          <div class="label">Invitados (lista retiro)</div>
-          <input type="file" (change)="onFile('invitados', $event)" [disabled]="isBusy('subir_todo','invitados')" />
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="upload('invitados')"
-                  [disabled]="isBusy('subir_todo','invitados')">
-            <span *ngIf="busy.invitados" class="spinner-border spinner-border-sm me-2"></span>
-            Subir
-          </button>
-        </div>
-
-        <div class="upload-row">
-          <div class="label">Asistentes (retiro)</div>
-          <input type="file" (change)="onFile('asistentes', $event)" [disabled]="isBusy('subir_todo','asistentes')" />
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="upload('asistentes')"
-                  [disabled]="isBusy('subir_todo','asistentes')">
-            <span *ngIf="busy.asistentes" class="spinner-border spinner-border-sm me-2"></span>
-            Subir
-          </button>
-        </div>
-
-        <div class="small text-muted mt-2">
-          Orden recomendado: Matrícula → Pagos → JUNAEB → Invitados → Asistentes.
-        </div>
-
-        <button class="btn btn-success mt-3 w-100"
-                (click)="subirTodoYCalcular()"
-                [disabled]="isBusy('subir_todo','recalcular','enviar','descargar','matricula','pagos','junaeb','invitados','asistentes')">
-          <span *ngIf="busy.subir_todo" class="spinner-border spinner-border-sm me-2"></span>
-          Subir todo y calcular
-        </button>
       </div>
     </div>
   </div>
 
-  <div class="col-12 col-lg-6">
-    <div class="card">
-      <div class="card-header">Resultados</div>
-      <div class="card-body">
-        <div *ngIf="results.length === 0" class="text-muted">Sin acciones aún.</div>
-        <div *ngFor="let r of results" class="mb-2">
-          <div class="d-flex justify-content-between">
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">Actividad reciente</div>
+      <div class="card-body results-panel">
+        <div *ngIf="results.length === 0" class="empty-state">
+          <div class="empty-icon">📄</div>
+          <p>Sin acciones aún. Sube tu primer archivo para ver resultados aquí.</p>
+        </div>
+        <div *ngFor="let r of results" class="result-item">
+          <div class="result-title">
             <div>
-              <b>{{ r.tipo }}</b>
-              <span class="badge ms-2" [class.bg-success]="r.ok" [class.bg-danger]="!r.ok">
-                {{ r.ok ? 'OK' : 'ERROR' }}
+              <strong>{{ r.tipo }}</strong>
+              <span class="result-status" [class.is-ok]="r.ok" [class.is-error]="!r.ok">
+                {{ r.ok ? 'OK' : 'Error' }}
               </span>
             </div>
           </div>
-          <pre class="mt-1 p-2 bg-light border rounded small">{{ r.message }}</pre>
+          <pre>{{ r.message }}</pre>
         </div>
       </div>
     </div>
