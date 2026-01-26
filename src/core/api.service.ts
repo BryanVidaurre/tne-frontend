@@ -37,7 +37,7 @@ export class ApiService {
   constructor(private http: HttpClient) {}
 
   uploadExcel(
-    tipo: 'pagos' | 'pago_sello' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes',
+    tipo: 'pagos' | 'matricula' | 'junaeb' | 'invitados' | 'asistentes',
     periodo: number,
     file: File,
   ) {

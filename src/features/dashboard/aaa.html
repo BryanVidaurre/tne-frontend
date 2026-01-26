@@ -1,4 +1,4 @@
-<!-- dashboard.component.html -->
+<!-- dashboard.component.html (Angular Material) -->
 <section class="hero">
   <mat-card class="hero-card" appearance="outlined">
     <div class="hero-grid">
@@ -11,17 +11,12 @@
             [(ngModel)]="periodo"
             [disabled]="isBusy('subir_todo', 'recalcular', 'enviar', 'descargar')"
           />
-          <mat-hint>Ej: {{ currentYear }}</mat-hint>
+          <mat-hint>Ej: {{ new Date().getFullYear() }}</mat-hint>
         </mat-form-field>
       </div>
 
       <div class="hero-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="enviarCorreos()"
-          [disabled]="isBusy('enviar')"
-        >
+        <button mat-raised-button color="primary" (click)="enviarCorreos()" [disabled]="isBusy('enviar')">
           <mat-spinner *ngIf="busy.enviar" diameter="18"></mat-spinner>
           <span>{{ busy.enviar ? 'Enviando correos...' : 'Enviar correos' }}</span>
         </button>
@@ -35,21 +30,13 @@
           <mat-spinner *ngIf="busy.descargar" diameter="18"></mat-spinner>
           <span>{{ busy.descargar ? 'Generando reporte...' : 'Descargar reporte' }}</span>
         </button>
-
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="recalcular()"
-        >
-          <mat-spinner *ngIf="busy.descargar" diameter="18"></mat-spinner>
-          <span>{{'Recalcular'}}</span>
-        </button>
       </div>
     </div>
   </mat-card>
 </section>
 
 <div class="main-grid">
+  <!-- IZQUIERDA -->
   <mat-card class="left" appearance="outlined">
     <mat-card-header>
       <mat-card-title>Subida de archivos</mat-card-title>
@@ -64,23 +51,31 @@
     <mat-divider></mat-divider>
 
     <mat-card-content class="upload-stack">
-      <div class="upload-panel" *ngFor="let tipo of tipos">
+      <!-- PANEL (reutiliza markup con ng-container por tipo) -->
+      <div class="upload-panel" *ngFor="let tipo of ['matricula','pagos','junaeb','invitados','asistentes']">
         <div class="panel-head">
           <div class="panel-title">
             <div class="label">{{ pretty(tipo) }}</div>
+            <div class="desc" [ngSwitch]="tipo">
+              <span *ngSwitchCase="'matricula'">Incluye los datos principales de estudiantes.</span>
+              <span *ngSwitchCase="'pagos'">Define quién pagó y habilita el flujo.</span>
+              <span *ngSwitchCase="'junaeb'">Estado oficial del proceso y fechas asociadas.</span>
+              <span *ngSwitchCase="'invitados'">Marca quienes están habilitados para retiro.</span>
+              <span *ngSwitchCase="'asistentes'">Confirma retiros presenciales y medio de ingreso.</span>
+            </div>
           </div>
 
           <mat-chip
             class="status-chip"
             [ngClass]="{
-              'chip-error': !!getFileError(tipo),
-              'chip-ready': !!getFile(tipo) && !getFileError(tipo),
+              'chip-error': (fileErrors as any)[tipo],
+              'chip-ready': (files as any)[tipo] && !(fileErrors as any)[tipo]
             }"
           >
-            <mat-icon *ngIf="getFileError(tipo)">error</mat-icon>
-            <mat-icon *ngIf="getFile(tipo) && !getFileError(tipo)">check_circle</mat-icon>
-            <mat-icon *ngIf="!getFile(tipo)">schedule</mat-icon>
-            {{ getFileError(tipo) ? 'Error' : getFile(tipo) ? 'Listo' : 'Pendiente' }}
+            <mat-icon *ngIf="(fileErrors as any)[tipo]">error</mat-icon>
+            <mat-icon *ngIf="(files as any)[tipo] && !(fileErrors as any)[tipo]">check_circle</mat-icon>
+            <mat-icon *ngIf="!(files as any)[tipo]">schedule</mat-icon>
+            {{ (fileErrors as any)[tipo] ? 'Error' : (files as any)[tipo] ? 'Listo' : 'Pendiente' }}
           </mat-chip>
         </div>
 
@@ -90,8 +85,8 @@
               #fileInput
               class="file-hidden"
               type="file"
-              (change)="onFile(tipo, $event)"
-              [disabled]="isBusy('subir_todo', tipo)"
+              (change)="onFile(tipo as any, $event)"
+              [disabled]="isBusy('subir_todo', tipo as any)"
             />
 
             <button
@@ -99,7 +94,7 @@
               color="primary"
               type="button"
               (click)="fileInput.click()"
-              [disabled]="isBusy('subir_todo', tipo)"
+              [disabled]="isBusy('subir_todo', tipo as any)"
             >
               <mat-icon>upload_file</mat-icon>
               Seleccionar Excel
@@ -109,14 +104,14 @@
               mat-icon-button
               type="button"
               matTooltip="Quitar archivo"
-              (click)="clearFile(tipo, fileInput)"
-              [disabled]="!getFile(tipo) || isBusy('subir_todo', tipo)"
+              (click)="clearFile(tipo as any, fileInput)"
+              [disabled]="!(files as any)[tipo] || isBusy('subir_todo', tipo as any)"
             >
               <mat-icon>close</mat-icon>
             </button>
 
-            <div class="file-meta" *ngIf="getFile(tipo)">
-              <div class="file-name">{{ getFileName(tipo) }}</div>
+            <div class="file-meta" *ngIf="(files as any)[tipo]">
+              <div class="file-name">{{ (files as any)[tipo]?.name }}</div>
               <div class="file-hint">Listo para subir</div>
             </div>
           </div>
@@ -124,29 +119,27 @@
           <div class="req">
             <div class="req-title">Columnas requeridas</div>
             <mat-chip-set class="chipset">
-              <mat-chip *ngFor="let h of getRequiredHeaders(tipo)" disableRipple>{{ h }}</mat-chip>
+              <mat-chip *ngFor="let h of (requiredHeaders as any)[tipo]" disableRipple>{{ h }}</mat-chip>
             </mat-chip-set>
           </div>
 
-          <div class="err" *ngIf="getFileError(tipo)">
+          <div class="err" *ngIf="(fileErrors as any)[tipo]">
             <mat-icon>warning</mat-icon>
-            <span>{{ getFileError(tipo) }}</span>
+            <span>{{ (fileErrors as any)[tipo] }}</span>
           </div>
 
-                    <div class="panel-actions">
+          <div class="panel-actions">
             <button
               mat-raised-button
               color="accent"
               type="button"
-              (click)="upload(tipo)"
-              [disabled]="isUploadingBlocked(tipo) || !getFile(tipo)"
+              (click)="upload(tipo as any)"
+              [disabled]="isBusy('subir_todo', tipo as any) || !(files as any)[tipo]"
             >
-              <mat-spinner *ngIf="isTipoBusy(tipo)" diameter="18"></mat-spinner>
-              <span>{{ isTipoBusy(tipo) ? 'Subiendo...' : 'Subir' }}</span>
+              <mat-spinner *ngIf="(busy as any)[tipo]" diameter="18"></mat-spinner>
+              <span>{{ (busy as any)[tipo] ? 'Subiendo...' : 'Subir' }}</span>
             </button>
           </div>
-
-
         </div>
       </div>
 
@@ -165,15 +158,8 @@
           (click)="subirTodoYCalcular()"
           [disabled]="
             isBusy(
-              'subir_todo',
-              'recalcular',
-              'enviar',
-              'descargar',
-              'matricula',
-              'pagos',
-              'junaeb',
-              'invitados',
-              'asistentes'
+              'subir_todo','recalcular','enviar','descargar',
+              'matricula','pagos','junaeb','invitados','asistentes'
             )
           "
         >
@@ -184,6 +170,7 @@
     </mat-card-content>
   </mat-card>
 
+  <!-- DERECHA -->
   <mat-card class="right" appearance="outlined">
     <mat-card-header>
       <mat-card-title>Actividad reciente</mat-card-title>
