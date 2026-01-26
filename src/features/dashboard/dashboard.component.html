@@ -72,17 +72,12 @@
             </span>
           </div>
           <div class="upload-body">
-            <input type="file" accept=".xlsx" (change)="onFile('matricula', $event)" [disabled]="isBusy('subir_todo','matricula')" />
+            <input type="file" (change)="onFile('matricula', $event)" [disabled]="isBusy('subir_todo','matricula')" />
             <div class="upload-meta">
               <div *ngIf="files.matricula" class="small">Archivo: <strong>{{ files.matricula?.name }}</strong></div>
               <div *ngIf="fileErrors.matricula" class="small text-danger">{{ fileErrors.matricula }}</div>
             </div>
-            <button class="btn btn-sm btn-outline-primary"
-                    (click)="upload('matricula')"
-                    [disabled]="isBusy('subir_todo','matricula') || !files.matricula || fileErrors.matricula">
-              <span *ngIf="busy.matricula" class="spinner-border spinner-border-sm me-2"></span>
-              Subir archivo
-            </button>
+
           </div>
         </div>
 
@@ -97,17 +92,12 @@
             </span>
           </div>
           <div class="upload-body">
-            <input type="file" accept=".xlsx" (change)="onFile('pagos', $event)" [disabled]="isBusy('subir_todo','pagos')" />
+            <input type="file"  (change)="onFile('pagos', $event)" [disabled]="isBusy('subir_todo','pagos')" />
             <div class="upload-meta">
               <div *ngIf="files.pagos" class="small">Archivo: <strong>{{ files.pagos?.name }}</strong></div>
               <div *ngIf="fileErrors.pagos" class="small text-danger">{{ fileErrors.pagos }}</div>
             </div>
-            <button class="btn btn-sm btn-outline-primary"
-                    (click)="upload('pagos')"
-                    [disabled]="isBusy('subir_todo','pagos') || !files.pagos || fileErrors.pagos">
-              <span *ngIf="busy.pagos" class="spinner-border spinner-border-sm me-2"></span>
-              Subir archivo
-            </button>
+
           </div>
         </div>
 
@@ -122,17 +112,12 @@
             </span>
           </div>
           <div class="upload-body">
-            <input type="file" accept=".xlsx" (change)="onFile('junaeb', $event)" [disabled]="isBusy('subir_todo','junaeb')" />
+            <input type="file" (change)="onFile('junaeb', $event)" [disabled]="isBusy('subir_todo','junaeb')" />
             <div class="upload-meta">
               <div *ngIf="files.junaeb" class="small">Archivo: <strong>{{ files.junaeb?.name }}</strong></div>
               <div *ngIf="fileErrors.junaeb" class="small text-danger">{{ fileErrors.junaeb }}</div>
             </div>
-            <button class="btn btn-sm btn-outline-primary"
-                    (click)="upload('junaeb')"
-                    [disabled]="isBusy('subir_todo','junaeb') || !files.junaeb || fileErrors.junaeb">
-              <span *ngIf="busy.junaeb" class="spinner-border spinner-border-sm me-2"></span>
-              Subir archivo
-            </button>
+
           </div>
         </div>
 
@@ -147,17 +132,12 @@
             </span>
           </div>
           <div class="upload-body">
-            <input type="file" accept=".xlsx" (change)="onFile('invitados', $event)" [disabled]="isBusy('subir_todo','invitados')" />
+            <input type="file" (change)="onFile('invitados', $event)" [disabled]="isBusy('subir_todo','invitados')" />
             <div class="upload-meta">
               <div *ngIf="files.invitados" class="small">Archivo: <strong>{{ files.invitados?.name }}</strong></div>
               <div *ngIf="fileErrors.invitados" class="small text-danger">{{ fileErrors.invitados }}</div>
             </div>
-            <button class="btn btn-sm btn-outline-primary"
-                    (click)="upload('invitados')"
-                    [disabled]="isBusy('subir_todo','invitados') || !files.invitados || fileErrors.invitados">
-              <span *ngIf="busy.invitados" class="spinner-border spinner-border-sm me-2"></span>
-              Subir archivo
-            </button>
+
           </div>
         </div>
 
@@ -172,17 +152,12 @@
             </span>
           </div>
           <div class="upload-body">
-            <input type="file" accept=".xlsx" (change)="onFile('asistentes', $event)" [disabled]="isBusy('subir_todo','asistentes')" />
+            <input type="file" (change)="onFile('asistentes', $event)" [disabled]="isBusy('subir_todo','asistentes')" />
             <div class="upload-meta">
               <div *ngIf="files.asistentes" class="small">Archivo: <strong>{{ files.asistentes?.name }}</strong></div>
               <div *ngIf="fileErrors.asistentes" class="small text-danger">{{ fileErrors.asistentes }}</div>
             </div>
-            <button class="btn btn-sm btn-outline-primary"
-                    (click)="upload('asistentes')"
-                    [disabled]="isBusy('subir_todo','asistentes') || !files.asistentes || fileErrors.asistentes">
-              <span *ngIf="busy.asistentes" class="spinner-border spinner-border-sm me-2"></span>
-              Subir archivo
-            </button>
+
           </div>
         </div>
 
