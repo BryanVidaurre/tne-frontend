@@ -25,7 +25,7 @@
           [disabled]="isBusy('recalcular','subir_todo')"
         >
           <span *ngIf="busy.recalcular" class="spinner-border spinner-border-sm me-2"></span>
-          Recalcular estado
+          {{ busy.recalcular ? 'Recalculando...' : 'Recalcular estado' }}
         </button>
         <button
           class="btn btn-primary"
@@ -33,7 +33,7 @@
           [disabled]="isBusy('enviar','subir_todo')"
         >
           <span *ngIf="busy.enviar" class="spinner-border spinner-border-sm me-2"></span>
-          Enviar correos
+          {{ busy.enviar ? 'Enviando correos...' : 'Enviar correos' }}
         </button>
         <button
           class="btn btn-primary"
@@ -41,7 +41,7 @@
           [disabled]="isBusy('descargar','subir_todo')"
         >
           <span *ngIf="busy.descargar" class="spinner-border spinner-border-sm me-2"></span>
-          Descargar reporte
+          {{ busy.descargar ? 'Generando reporte...' : 'Descargar reporte' }}
         </button>
       </div>
     </div>
@@ -70,10 +70,6 @@
   [class.alert-warning]="alert.type === 'warning'"
   [class.alert-info]="alert.type === 'info'"
 >
-  {{ alert.text }}
-</div>
-
-<div *ngIf="alert" class="alert" [class.alert-success]="alert.type === 'success'" [class.alert-danger]="alert.type === 'danger'" [class.alert-warning]="alert.type === 'warning'" [class.alert-info]="alert.type === 'info'">
   {{ alert.text }}
 </div>
 
@@ -118,7 +114,7 @@
             </div>
             <button class="btn btn-sm btn-outline-primary"
                     (click)="upload('matricula')"
-                    [disabled]="isBusy('subir_todo','matricula') || !files.matricula || fileErrors.matricula">
+                    [disabled]="isBusy('subir_todo','matricula') || !files.matricula">
               <span *ngIf="busy.matricula" class="spinner-border spinner-border-sm me-2"></span>
               Subir matrícula
             </button>
@@ -154,7 +150,7 @@
             </div>
             <button class="btn btn-sm btn-outline-primary"
                     (click)="upload('pagos')"
-                    [disabled]="isBusy('subir_todo','pagos') || !files.pagos || fileErrors.pagos">
+                    [disabled]="isBusy('subir_todo','pagos') || !files.pagos">
               <span *ngIf="busy.pagos" class="spinner-border spinner-border-sm me-2"></span>
               Subir pagos
             </button>
@@ -190,7 +186,7 @@
             </div>
             <button class="btn btn-sm btn-outline-primary"
                     (click)="upload('junaeb')"
-                    [disabled]="isBusy('subir_todo','junaeb') || !files.junaeb || fileErrors.junaeb">
+                    [disabled]="isBusy('subir_todo','junaeb') || !files.junaeb">
               <span *ngIf="busy.junaeb" class="spinner-border spinner-border-sm me-2"></span>
               Subir JUNAEB
             </button>
@@ -226,7 +222,7 @@
             </div>
             <button class="btn btn-sm btn-outline-primary"
                     (click)="upload('invitados')"
-                    [disabled]="isBusy('subir_todo','invitados') || !files.invitados || fileErrors.invitados">
+                    [disabled]="isBusy('subir_todo','invitados') || !files.invitados">
               <span *ngIf="busy.invitados" class="spinner-border spinner-border-sm me-2"></span>
               Subir invitados
             </button>
@@ -262,7 +258,7 @@
             </div>
             <button class="btn btn-sm btn-outline-primary"
                     (click)="upload('asistentes')"
-                    [disabled]="isBusy('subir_todo','asistentes') || !files.asistentes || fileErrors.asistentes">
+                    [disabled]="isBusy('subir_todo','asistentes') || !files.asistentes">
               <span *ngIf="busy.asistentes" class="spinner-border spinner-border-sm me-2"></span>
               Subir asistentes
             </button>
@@ -276,7 +272,7 @@
           </div>
           <button class="btn btn-success"
                   (click)="subirTodoYCalcular()"
-                  [disabled]="isBusy('subir_todo','recalcular','enviar','descargar','matricula','pagos','junaeb','invitados','asistentes') || !!fileErrors.pagos">
+                  [disabled]="isBusy('subir_todo','recalcular','enviar','descargar','matricula','pagos','junaeb','invitados','asistentes')">
             <span *ngIf="busy.subir_todo" class="spinner-border spinner-border-sm me-2"></span>
             Subir todo y calcular
           </button>

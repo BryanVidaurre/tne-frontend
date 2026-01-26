@@ -27,6 +27,7 @@ export class DashboardComponent {
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
   fileErrors: Partial<Record<UploadTipo, string>> = {};
+  uploadAttempts: Partial<Record<UploadTipo, number>> = {};
   readonly requiredHeaders: Record<UploadTipo, string[]> = {
     pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
     matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
@@ -71,6 +72,7 @@ export class DashboardComponent {
 
       this.files[tipo] = f;
       this.fileErrors[tipo] = '';
+      this.uploadAttempts[tipo] = 0;
       this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
     }
   }
@@ -130,11 +132,8 @@ export class DashboardComponent {
       this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
       return;
     }
-    if (validationError) {
-      this.pushResult(tipo, false, validationError);
-      this.setAlert('warning', validationError);
-      return;
-    }
+    const canUpload = await this.validateBeforeUpload(tipo, file);
+    if (!canUpload) return;
 
     this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
     try {
@@ -188,11 +187,10 @@ export class DashboardComponent {
       this.setAlert('warning', 'Falta el archivo de PAGOS.');
       return;
     }
-    if (this.fileErrors['pagos']) {
-      const msg = this.fileErrors['pagos'] as string;
-      this.pushResult('subir_todo', false, msg);
-      this.setAlert('warning', msg);
-      return;
+    const pagosFile = this.files['pagos'];
+    if (pagosFile) {
+      const canUpload = await this.validateBeforeUpload('pagos', pagosFile);
+      if (!canUpload) return;
     }
 
     this.start('subir_todo', 'Subiendo archivos (secuencial)...');
@@ -200,12 +198,8 @@ export class DashboardComponent {
       for (const tipo of orden) {
         const file = this.files[tipo];
         if (!file) continue;
-        if (this.fileErrors[tipo]) {
-          const msg = this.fileErrors[tipo] as string;
-          this.pushResult(tipo, false, msg);
-          this.setAlert('warning', msg);
-          continue;
-        }
+        const canUpload = await this.validateBeforeUpload(tipo, file);
+        if (!canUpload) continue;
 
         this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
         try {
@@ -251,14 +245,47 @@ export class DashboardComponent {
     }
   }
 
-  private async validateExcelFile(tipo: UploadTipo, file: File): Promise<string | null> {
+  private async validateBeforeUpload(tipo: UploadTipo, file: File): Promise<boolean> {
+    const attempt = (this.uploadAttempts[tipo] ?? 0) + 1;
+    this.uploadAttempts[tipo] = attempt;
+
+    const { missing, error } = await this.checkExcelHeaders(tipo, file);
+    if (error) {
+      this.fileErrors[tipo] = error;
+      this.pushResult(tipo, false, error);
+      this.setAlert('warning', error);
+      return false;
+    }
+    if (missing.length > 0) {
+      const message =
+        attempt >= 2
+          ? `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
+              ', ',
+            )}.`
+          : `El archivo de ${this.pretty(
+              tipo,
+            )} no cumple la estructura requerida. Intenta subir nuevamente para ver las columnas faltantes.`;
+      this.fileErrors[tipo] = message;
+      this.pushResult(tipo, false, message);
+      this.setAlert('warning', message);
+      return false;
+    }
+
+    this.fileErrors[tipo] = '';
+    return true;
+  }
+
+  private async checkExcelHeaders(
+    tipo: UploadTipo,
+    file: File,
+  ): Promise<{ missing: string[]; error: string | null }> {
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      return `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.`;
+      return { missing: [], error: `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.` };
     }
 
     try {
       if (typeof XLSX === 'undefined') {
-        return `No está disponible el lector de Excel en el navegador.`;
+        return { missing: [], error: `No está disponible el lector de Excel en el navegador.` };
       }
 
       const buffer = await file.arrayBuffer();
@@ -266,7 +293,7 @@ export class DashboardComponent {
       const sheetName = workbook.SheetNames[0];
 
       if (!sheetName) {
-        return `El archivo de ${this.pretty(tipo)} no tiene hojas.`;
+        return { missing: [], error: `El archivo de ${this.pretty(tipo)} no tiene hojas.` };
       }
 
       const sheet = workbook.Sheets[sheetName];
@@ -280,7 +307,10 @@ export class DashboardComponent {
         .filter((value) => value.length > 0);
 
       if (headers.length === 0) {
-        return `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`;
+        return {
+          missing: [],
+          error: `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`,
+        };
       }
 
       const requiredLabels = this.requiredHeaders[tipo];
@@ -289,16 +319,15 @@ export class DashboardComponent {
         (label, index) => !headers.includes(expected[index]),
       );
 
-      if (missing.length > 0) {
-        return `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
-          ', ',
-        )}.`;
-      }
-
-      return null;
+      return { missing, error: null };
     } catch (error) {
       console.error('Error leyendo Excel', error);
-      return `No se pudo leer el archivo de ${this.pretty(tipo)}. Verifica que sea un Excel válido.`;
+      return {
+        missing: [],
+        error: `No se pudo leer el archivo de ${this.pretty(
+          tipo,
+        )}. Verifica que sea un Excel válido.`,
+      };
     }
   }
 
