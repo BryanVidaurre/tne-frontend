@@ -27,6 +27,26 @@ export class DashboardComponent {
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
   fileErrors: Partial<Record<UploadTipo, string>> = {};
+  readonly requiredHeaders: Record<UploadTipo, string[]> = {
+    pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
+    matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
+    junaeb: [
+      'PERIODO',
+      'PROCESO',
+      'RUN',
+      'DV_RUN',
+      'ESTADO_TNE',
+      'MOTIVO_RECHAZO',
+      'FECHA_INSCRIPCION',
+      'FECHA_ATENCION',
+      'FECHA_ENTREGA',
+      'NUMERO_OT',
+      'FOLIO_ENTREGA',
+      'OBSERVACION',
+    ],
+    invitados: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL'],
+    asistentes: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL', 'MEDIO INGRESO', 'FECHA'],
+  };
 
   // Estados de UI
   busy: Partial<Record<ActionKey, boolean>> = {};
@@ -263,25 +283,11 @@ export class DashboardComponent {
         return `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`;
       }
 
-      const requiredColumns: Record<UploadTipo, string[]> = {
-        pagos: ['rut_num', 'rut_dv', 'nombre', 'fecha_pago', 'tipo_alumno'],
-        matricula: ['rut_num', 'rut_dv', 'nombre', 'email'],
-        junaeb: [
-          'rut_num',
-          'proceso',
-          'estado_tne',
-          'motivo_rechazo',
-          'numero_ot',
-          'fecha_inscripcion',
-          'fecha_atencion',
-          'fecha_entrega_u',
-        ],
-        invitados: ['rut_num', 'con_huella'],
-        asistentes: ['rut_num', 'con_huella', 'medio_ingreso', 'fecha'],
-      };
-
-      const expected = requiredColumns[tipo].map((col) => this.normalizeHeader(col));
-      const missing = expected.filter((col) => !headers.includes(col));
+      const requiredLabels = this.requiredHeaders[tipo];
+      const expected = requiredLabels.map((col) => this.normalizeHeader(col));
+      const missing = requiredLabels.filter(
+        (label, index) => !headers.includes(expected[index]),
+      );
 
       if (missing.length > 0) {
         return `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
