@@ -1,8 +1,20 @@
-import { Component } from '@angular/core';
+// dashboard.component.ts
+import { ChangeDetectorRef, Component, NgZone } from '@angular/core';
 import { ApiService } from '../../core/api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 declare const XLSX: {
   read(data: ArrayBuffer, opts: { type: string }): { SheetNames: string[]; Sheets: any };
@@ -17,17 +29,36 @@ type UiAlert = { type: AlertType; text: string };
 
 @Component({
   selector: 'app-dashboard',
+  standalone: true,
   templateUrl: './dashboard.component.html',
-  imports: [CommonModule, FormsModule],
   styleUrls: ['./dashboard.component.scss'],
+  imports: [
+    CommonModule,
+    FormsModule,
+
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatChipsModule,
+    MatIconModule,
+    MatDividerModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+    MatTooltipModule,
+  ],
 })
 export class DashboardComponent {
   periodo = new Date().getFullYear();
+  currentYear = new Date().getFullYear();
+
+  readonly tipos: UploadTipo[] = ['matricula', 'pagos', 'junaeb', 'invitados', 'asistentes'];
 
   results: Array<{ tipo: string; ok: boolean; message: string }> = [];
   files: Partial<Record<UploadTipo, File>> = {};
   fileErrors: Partial<Record<UploadTipo, string>> = {};
   uploadAttempts: Partial<Record<UploadTipo, number>> = {};
+
   readonly requiredHeaders: Record<UploadTipo, string[]> = {
     pagos: ['RUT', 'NOMBRE', 'FECHA DE PAGO', 'TIPO ALUMNO'],
     matricula: ['PER_NRUT', 'PER_DRUT', 'PNA_NOM', 'PNA_APAT', 'PNA_AMAT', 'PER_EMAIL'],
@@ -43,38 +74,28 @@ export class DashboardComponent {
       'FECHA_ENTREGA',
       'NUMERO_OT',
       'FOLIO_ENTREGA',
-      'OBSERVACION',
     ],
     invitados: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL'],
     asistentes: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL', 'MEDIO INGRESO', 'FECHA'],
   };
 
-  // Estados de UI
   busy: Partial<Record<ActionKey, boolean>> = {};
   statusText: Partial<Record<ActionKey, string>> = {};
   alert: UiAlert | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private snackBar: MatSnackBar,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
-  async onFile(tipo: UploadTipo, ev: Event) {
-    const input = ev.target as HTMLInputElement;
-    const f = input.files?.[0];
-    if (f) {
-      const validationError = await this.validateExcelFile(tipo, f);
-      if (validationError) {
-        delete this.files[tipo];
-        this.fileErrors[tipo] = validationError;
-        input.value = '';
-        this.pushResult(tipo, false, validationError);
-        this.setAlert('warning', validationError);
-        return;
-      }
-
-      this.files[tipo] = f;
-      this.fileErrors[tipo] = '';
-      this.uploadAttempts[tipo] = 0;
-      this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
-    }
+  // ---------------- UI helpers (garantiza repaint inmediato) ----------------
+  private ui(fn: () => void) {
+    this.zone.run(() => {
+      fn();
+      this.cdr.markForCheck();
+    });
   }
 
   isBusy(...keys: ActionKey[]) {
@@ -82,25 +103,46 @@ export class DashboardComponent {
   }
 
   private start(key: ActionKey, text: string) {
-    this.busy[key] = true;
-    this.statusText[key] = text;
+    this.ui(() => {
+      this.busy[key] = true;
+      this.statusText[key] = text;
+    });
     this.setAlert('info', text);
   }
 
   private end(key: ActionKey) {
-    this.busy[key] = false;
-    this.statusText[key] = '';
+    this.ui(() => {
+      this.busy[key] = false;
+      this.statusText[key] = '';
+    });
   }
 
   private setAlert(type: AlertType, text: string) {
-    this.alert = { type, text };
-    // opcional: auto-cerrar
-    window.clearTimeout((this as any).__alertTimer);
-    (this as any).__alertTimer = window.setTimeout(() => (this.alert = null), 3500);
+    this.ui(() => {
+      this.alert = { type, text };
+    });
+
+    const panelClass =
+      type === 'success'
+        ? 'snack-success'
+        : type === 'danger'
+          ? 'snack-danger'
+          : type === 'warning'
+            ? 'snack-warning'
+            : 'snack-info';
+
+    this.snackBar.open(text, 'Cerrar', {
+      duration: 3500,
+      panelClass,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+    });
   }
 
   private pushResult(tipo: string, ok: boolean, message: string) {
-    this.results.unshift({ tipo, ok, message });
+    this.ui(() => {
+      this.results.unshift({ tipo, ok, message });
+    });
   }
 
   private errMsg(e: any): string {
@@ -109,7 +151,8 @@ export class DashboardComponent {
     return String(m);
   }
 
-  private pretty(t: string) {
+  // ---------------- Template-safe helpers (sin "as any" en HTML) ----------------
+  pretty(t: string) {
     const map: Record<string, string> = {
       matricula: 'Matrícula',
       pagos: 'Pagos',
@@ -124,18 +167,74 @@ export class DashboardComponent {
     return map[t] ?? t;
   }
 
+  getFile(tipo: UploadTipo): File | undefined {
+    return this.files[tipo];
+  }
+  getFileName(tipo: UploadTipo): string {
+    return this.files[tipo]?.name ?? '';
+  }
+  getFileError(tipo: UploadTipo): string {
+    return this.fileErrors[tipo] ?? '';
+  }
+  getRequiredHeaders(tipo: UploadTipo): string[] {
+    return this.requiredHeaders[tipo];
+  }
+  isTipoBusy(tipo: UploadTipo): boolean {
+    return !!this.busy[tipo];
+  }
+  isUploadingBlocked(tipo: UploadTipo): boolean {
+    return this.isBusy('subir_todo') || !!this.busy[tipo];
+  }
+  // ---------------------------------------------------------------------------
+
+  async onFile(tipo: UploadTipo, ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const f = input.files?.[0];
+    if (!f) return;
+
+    const validationError = await this.validateExcelFile(tipo, f);
+    if (validationError) {
+      this.ui(() => {
+        delete this.files[tipo];
+        this.fileErrors[tipo] = validationError;
+      });
+      input.value = '';
+      this.pushResult(tipo, false, validationError);
+      this.setAlert('warning', validationError);
+      return;
+    }
+
+    this.ui(() => {
+      this.files[tipo] = f;
+      this.fileErrors[tipo] = '';
+      this.uploadAttempts[tipo] = 0;
+    });
+    this.setAlert('success', `Archivo cargado: ${this.pretty(tipo)} (${f.name})`);
+  }
+
+  clearFile(tipo: UploadTipo, input?: HTMLInputElement) {
+    this.ui(() => {
+      delete this.files[tipo];
+      this.fileErrors[tipo] = '';
+      this.uploadAttempts[tipo] = 0;
+    });
+    if (input) input.value = '';
+  }
+
   async upload(tipo: UploadTipo) {
     const file = this.files[tipo];
-    const validationError = this.fileErrors[tipo];
     if (!file) {
       this.pushResult(tipo, false, 'Selecciona un archivo primero.');
       this.setAlert('warning', `Falta archivo: ${this.pretty(tipo)}`);
       return;
     }
+
     const canUpload = await this.validateBeforeUpload(tipo, file);
     if (!canUpload) return;
 
     this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
+    await Promise.resolve(); // permite repintar inmediatamente (spinner/pill)
+
     try {
       const res = await firstValueFrom(this.api.uploadExcel(tipo, this.periodo, file));
       this.pushResult(tipo, true, JSON.stringify(res));
@@ -151,6 +250,8 @@ export class DashboardComponent {
 
   async recalcular() {
     this.start('recalcular', 'Recalculando estado...');
+    await Promise.resolve();
+
     try {
       const res = await firstValueFrom(this.api.recalcular(this.periodo));
       this.pushResult('recalcular', true, JSON.stringify(res));
@@ -166,6 +267,8 @@ export class DashboardComponent {
 
   async enviarCorreos() {
     this.start('enviar', 'Enviando correos...');
+    await Promise.resolve();
+
     try {
       const res = await firstValueFrom(this.api.enviarCorreos(this.periodo));
       this.pushResult('enviar', true, JSON.stringify(res));
@@ -187,6 +290,7 @@ export class DashboardComponent {
       this.setAlert('warning', 'Falta el archivo de PAGOS.');
       return;
     }
+
     const pagosFile = this.files['pagos'];
     if (pagosFile) {
       const canUpload = await this.validateBeforeUpload('pagos', pagosFile);
@@ -194,24 +298,33 @@ export class DashboardComponent {
     }
 
     this.start('subir_todo', 'Subiendo archivos (secuencial)...');
+    await Promise.resolve();
+
     try {
       for (const tipo of orden) {
         const file = this.files[tipo];
         if (!file) continue;
+
         const canUpload = await this.validateBeforeUpload(tipo, file);
         if (!canUpload) continue;
 
         this.start(tipo, `Subiendo ${this.pretty(tipo)}...`);
+        await Promise.resolve();
+
         try {
           const res = await firstValueFrom(this.api.uploadExcel(tipo, this.periodo, file));
           this.pushResult(tipo, true, JSON.stringify(res));
           this.setAlert('success', `${this.pretty(tipo)} subido correctamente.`);
+        } catch (e: any) {
+          const msg = this.errMsg(e);
+          this.pushResult(tipo, false, msg);
+          this.setAlert('danger', `Error al subir ${this.pretty(tipo)}: ${msg}`);
         } finally {
           this.end(tipo);
         }
       }
 
-      await this.recalcular(); // ya maneja su propio feedback
+      await this.recalcular();
       this.setAlert('success', 'Proceso completo: subir + recalcular.');
     } catch (e: any) {
       const msg = this.errMsg(e);
@@ -224,6 +337,8 @@ export class DashboardComponent {
 
   async descargarReporte() {
     this.start('descargar', 'Generando y descargando reporte...');
+    await Promise.resolve();
+
     try {
       const blob = await firstValueFrom(this.api.descargarReporte(this.periodo));
 
@@ -247,31 +362,38 @@ export class DashboardComponent {
 
   private async validateBeforeUpload(tipo: UploadTipo, file: File): Promise<boolean> {
     const attempt = (this.uploadAttempts[tipo] ?? 0) + 1;
-    this.uploadAttempts[tipo] = attempt;
+    this.ui(() => {
+      this.uploadAttempts[tipo] = attempt;
+    });
 
     const { missing, error } = await this.checkExcelHeaders(tipo, file);
     if (error) {
-      this.fileErrors[tipo] = error;
+      this.ui(() => {
+        this.fileErrors[tipo] = error;
+      });
       this.pushResult(tipo, false, error);
       this.setAlert('warning', error);
       return false;
     }
+
     if (missing.length > 0) {
       const message =
         attempt >= 2
-          ? `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
-              ', ',
-            )}.`
+          ? `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(', ')}.`
           : `El archivo de ${this.pretty(
               tipo,
             )} no cumple la estructura requerida. Intenta subir nuevamente para ver las columnas faltantes.`;
-      this.fileErrors[tipo] = message;
+      this.ui(() => {
+        this.fileErrors[tipo] = message;
+      });
       this.pushResult(tipo, false, message);
       this.setAlert('warning', message);
       return false;
     }
 
-    this.fileErrors[tipo] = '';
+    this.ui(() => {
+      this.fileErrors[tipo] = '';
+    });
     return true;
   }
 
@@ -279,10 +401,6 @@ export class DashboardComponent {
     tipo: UploadTipo,
     file: File,
   ): Promise<{ missing: string[]; error: string | null }> {
-    if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      return { missing: [], error: `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.` };
-    }
-
     try {
       if (typeof XLSX === 'undefined') {
         return { missing: [], error: `No está disponible el lector de Excel en el navegador.` };
@@ -301,44 +419,100 @@ export class DashboardComponent {
         Array<string | number | null>
       >;
 
-      const headerRow = rows.find((row) => row && row.length > 0) ?? [];
+      const required = this.requiredHeaders[tipo].map((h) => this.normalizeHeader(h));
+
+      const headerRow =
+        rows.find((row) => {
+          const hs = (row || []).map((c) => this.normalizeHeader(c));
+          return required.some((r) => hs.includes(r));
+        }) ?? [];
+
       const headers = headerRow
         .map((value) => this.normalizeHeader(value))
         .filter((value) => value.length > 0);
 
       if (headers.length === 0) {
-        return {
-          missing: [],
-          error: `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`,
-        };
+        return { missing: [], error: `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.` };
       }
 
       const requiredLabels = this.requiredHeaders[tipo];
-      const expected = requiredLabels.map((col) => this.normalizeHeader(col));
-      const missing = requiredLabels.filter(
-        (label, index) => !headers.includes(expected[index]),
-      );
+      const requiredNorm = requiredLabels.map((c) => this.normalizeHeader(c));
+      const headerSet = new Set(headers);
 
+      const missing = requiredLabels.filter((label, i) => !headerSet.has(requiredNorm[i]));
       return { missing, error: null };
     } catch (error) {
       console.error('Error leyendo Excel', error);
       return {
         missing: [],
-        error: `No se pudo leer el archivo de ${this.pretty(
-          tipo,
-        )}. Verifica que sea un Excel válido.`,
+        error: `No se pudo leer el archivo de ${this.pretty(tipo)}. Verifica que sea un Excel válido.`,
       };
     }
   }
 
+  private async validateExcelFile(tipo: UploadTipo, file: File): Promise<string | null> {
+    try {
+      if (typeof XLSX === 'undefined') {
+        return `No está disponible el lector de Excel en el navegador.`;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        return `El archivo de ${this.pretty(tipo)} no tiene hojas.`;
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as any[][];
+
+      if (!rows || rows.length === 0) {
+        return `El archivo de ${this.pretty(tipo)} está vacío.`;
+      }
+
+      const requiredLabels = this.requiredHeaders[tipo];
+      const requiredNorm = requiredLabels.map((h) => this.normalizeHeader(h));
+
+      const headerRow =
+        rows.find((row) => {
+          const hs = (row || []).map((c) => this.normalizeHeader(c));
+          return requiredNorm.some((r) => hs.includes(r));
+        }) ?? [];
+
+      if (!headerRow.length) {
+        return `No se encontró la fila de encabezados para ${this.pretty(tipo)}.`;
+      }
+
+      const headers = headerRow
+        .map((value) => this.normalizeHeader(value))
+        .filter((h) => h.length > 0);
+
+      if (headers.length === 0) {
+        return `El archivo de ${this.pretty(tipo)} no tiene encabezados válidos.`;
+      }
+
+      const headerSet = new Set(headers);
+      const missing = requiredLabels.filter((label, i) => !headerSet.has(requiredNorm[i]));
+
+      if (missing.length > 0) {
+        return `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(', ')}.`;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error leyendo Excel', error);
+      return `No se pudo leer el archivo de ${this.pretty(tipo)}. Verifica que sea un Excel válido.`;
+    }
+  }
+
   private normalizeHeader(value: unknown): string {
-    if (value === null || value === undefined) return '';
-    return String(value)
+    return String(value ?? '')
       .trim()
-      .toLowerCase()
+      .toUpperCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[\s-]+/g, '_')
+      .replace(/\s+/g, ' ')
       .replace(/[()\.]/g, '')
       .trim();
   }
