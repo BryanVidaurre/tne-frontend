@@ -3,8 +3,8 @@
 /* Ajusta el “feel” general de cards y botones (sin romper Bootstrap) */
 .card {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 .card-header {
@@ -15,7 +15,100 @@
 }
 
 .card-body {
-  padding: 1rem;
+  padding: 1.2rem;
+}
+
+.dashboard-hero {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(13, 110, 253, 0.02));
+  border-radius: 24px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(13, 110, 253, 0.15);
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+}
+
+.hero-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.hero-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #0d6efd;
+  margin-bottom: 0.35rem;
+}
+
+.hero-subtitle {
+  color: #4b5563;
+  margin-bottom: 0;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.periodo-field {
+  min-width: 160px;
+}
+
+.hero-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.hero-step {
+  background: #fff;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+
+  span {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.dashboard-alert {
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
 }
 
 .dashboard-header {
@@ -71,59 +164,113 @@
   box-shadow: none;
 }
 
-/* Separación de botones en desktop */
-@media (min-width: 768px) {
-  .col-md-9.d-flex {
-    flex-wrap: wrap;
-  }
+/* Upload stack */
+.upload-stack {
+  display: grid;
+  gap: 1rem;
 }
 
-/* Upload rows */
-.upload-item {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
-  padding: 0.85rem 0.9rem;
+.upload-panel {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  padding: 1rem;
   background: #fff;
-  margin-bottom: 0.9rem;
-
-  .label {
-    font-weight: 600;
-  }
-
-  input[type='file'] {
-    width: 100%;
-    padding: 0.35rem;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.16);
-    background: #fff;
-  }
+  display: grid;
+  gap: 0.85rem;
 }
 
-.upload-header {
+.upload-panel-head {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: flex-start;
-  margin-bottom: 0.6rem;
+
+  p {
+    margin: 0.2rem 0 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
 }
 
-.upload-body {
+.upload-panel-body {
   display: grid;
-  grid-template-columns: 1.2fr 1fr auto;
-  gap: 0.75rem;
+  grid-template-columns: minmax(200px, 1fr) minmax(260px, 1.2fr) auto;
+  gap: 1rem;
   align-items: center;
 }
 
-.upload-meta {
+.upload-input {
+  border: 1px dashed rgba(15, 23, 42, 0.25);
+  border-radius: 14px;
+  padding: 0.8rem;
+  position: relative;
+  background: rgba(248, 250, 252, 0.8);
   display: grid;
   gap: 0.35rem;
+  text-align: center;
+
+  input[type='file'] {
+    width: 100%;
+  }
+
+  span {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+}
+
+.upload-info {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0b5ed7;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pill {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(108, 117, 125, 0.12);
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.status-pill.is-ready {
+  background: rgba(25, 135, 84, 0.15);
+  color: #198754;
+}
+
+.status-pill.is-error {
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+.upload-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .order-hint {
   padding: 0.75rem 0.9rem;
-  border-radius: 12px;
-  background: rgba(13, 110, 253, 0.08);
-  margin-top: 0.5rem;
+  border-radius: 14px;
+  background: rgba(13, 110, 253, 0.1);
+  border: 1px solid rgba(13, 110, 253, 0.2);
 
   .order-steps {
     font-weight: 600;
@@ -132,14 +279,36 @@
 }
 
 /* En mobile, apilar todo */
-@media (max-width: 992px) {
-  .upload-body {
+@media (max-width: 1200px) {
+  .upload-panel-body {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero {
+    padding: 1.25rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-buttons {
+    width: 100%;
 
     button {
-      width: 100%;
+      flex: 1;
     }
+  }
+
+  .upload-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .upload-footer button {
+    width: 100%;
   }
 }
 
@@ -158,6 +327,55 @@ pre {
   border-radius: 999px;
   padding: 0.35rem 0.55rem;
   font-weight: 600;
+}
+
+.results-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.result-item {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 0.75rem;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.result-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.result-status {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.result-status.is-ok {
+  background: rgba(25, 135, 84, 0.15);
+  color: #198754;
+}
+
+.result-status.is-error {
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #6b7280;
+  padding: 1rem;
+}
+
+.empty-icon {
+  font-size: 2rem;
 }
 
 /* Spinners */

@@ -42,6 +42,7 @@ export class DashboardComponent {
       'FECHA_ENTREGA',
       'NUMERO_OT',
       'FOLIO_ENTREGA',
+      'OBSERVACION',
     ],
     invitados: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL'],
     asistentes: ['EVENTO', 'RUT', 'NOMBRE', 'CON HUELLA DIGITAL', 'MEDIO INGRESO', 'FECHA'],
@@ -251,6 +252,9 @@ export class DashboardComponent {
   }
 
   private async validateExcelFile(tipo: UploadTipo, file: File): Promise<string | null> {
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      return `El archivo de ${this.pretty(tipo)} debe ser un .xlsx.`;
+    }
 
     try {
       if (typeof XLSX === 'undefined') {
@@ -270,14 +274,7 @@ export class DashboardComponent {
         Array<string | number | null>
       >;
 
-      const required = this.requiredHeaders[tipo].map((h) => this.normalizeHeader(h));
-
-      const headerRow =
-        rows.find((row) => {
-          const hs = (row || []).map((c) => this.normalizeHeader(c));
-          return required.some((r) => hs.includes(r));
-        }) ?? [];
-
+      const headerRow = rows.find((row) => row && row.length > 0) ?? [];
       const headers = headerRow
         .map((value) => this.normalizeHeader(value))
         .filter((value) => value.length > 0);
@@ -287,11 +284,10 @@ export class DashboardComponent {
       }
 
       const requiredLabels = this.requiredHeaders[tipo];
-      const requiredNorm = requiredLabels.map((c) => this.normalizeHeader(c));
-
-      const headerSet = new Set(headers);
-
-      const missing = requiredLabels.filter((label, i) => !headerSet.has(requiredNorm[i]));
+      const expected = requiredLabels.map((col) => this.normalizeHeader(col));
+      const missing = requiredLabels.filter(
+        (label, index) => !headers.includes(expected[index]),
+      );
 
       if (missing.length > 0) {
         return `El archivo de ${this.pretty(tipo)} no tiene las columnas requeridas: ${missing.join(
