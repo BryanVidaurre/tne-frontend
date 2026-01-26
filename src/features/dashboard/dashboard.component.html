@@ -73,6 +73,10 @@
   {{ alert.text }}
 </div>
 
+<div *ngIf="alert" class="alert" [class.alert-success]="alert.type === 'success'" [class.alert-danger]="alert.type === 'danger'" [class.alert-warning]="alert.type === 'warning'" [class.alert-info]="alert.type === 'info'">
+  {{ alert.text }}
+</div>
+
 <div class="row g-3">
   <div class="col-12 col-lg-7">
     <div class="card">
