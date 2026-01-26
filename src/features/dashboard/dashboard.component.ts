@@ -154,7 +154,7 @@ export class DashboardComponent {
   pretty(t: string) {
     const map: Record<string, string> = {
       matricula: 'Matrícula',
-      pagos: 'Pagos',
+      pagos: 'Pagos Sello/Fotografia',
       junaeb: 'JUNAEB',
       invitados: 'Invitados',
       asistentes: 'Asistentes',
