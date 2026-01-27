@@ -36,13 +36,9 @@
           <span>{{ busy.descargar ? 'Generando reporte...' : 'Descargar reporte' }}</span>
         </button>
 
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="recalcular()"
-        >
+        <button mat-raised-button color="primary" (click)="recalcular()">
           <mat-spinner *ngIf="busy.descargar" diameter="18"></mat-spinner>
-          <span>{{'Recalcular'}}</span>
+          <span>{{ 'Recalcular' }}</span>
         </button>
       </div>
     </div>
@@ -133,7 +129,7 @@
             <span>{{ getFileError(tipo) }}</span>
           </div>
 
-                    <div class="panel-actions">
+          <div class="panel-actions">
             <button
               mat-raised-button
               color="accent"
@@ -145,8 +141,6 @@
               <span>{{ isTipoBusy(tipo) ? 'Subiendo...' : 'Subir' }}</span>
             </button>
           </div>
-
-
         </div>
       </div>
 
