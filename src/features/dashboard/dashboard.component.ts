@@ -16,6 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { AuthService } from '../../core/auth.service';
+
 declare const XLSX: {
   read(data: ArrayBuffer, opts: { type: string }): { SheetNames: string[]; Sheets: any };
   utils: { sheet_to_json: (sheet: any, opts: { header: number; blankrows: boolean }) => any };
@@ -88,6 +90,7 @@ export class DashboardComponent {
     private snackBar: MatSnackBar,
     private zone: NgZone,
     private cdr: ChangeDetectorRef,
+    private auth: AuthService,
   ) {}
 
   // ---------------- UI helpers (garantiza repaint inmediato) ----------------
@@ -520,5 +523,9 @@ export class DashboardComponent {
       .replace(/\s+/g, ' ')
       .replace(/[()\.]/g, '')
       .trim();
+  }
+
+  logout() {
+    this.auth.logout(true);
   }
 }

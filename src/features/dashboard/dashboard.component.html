@@ -40,6 +40,10 @@
           <mat-spinner *ngIf="busy.descargar" diameter="18"></mat-spinner>
           <span>{{ 'Recalcular' }}</span>
         </button>
+
+        <button mat-stroked-button color="primary" (click)="logout()">
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </div>
   </mat-card>

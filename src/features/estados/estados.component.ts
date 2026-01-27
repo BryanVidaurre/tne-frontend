@@ -3,6 +3,7 @@ import { ApiService, ProcesoRow } from '../../core/api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../core/auth.service';
 
 @Component({
   selector: 'app-estados',
@@ -27,7 +28,10 @@ export class EstadosComponent {
     'SIN_REGISTRO_JUNAEB',
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+  ) {}
 
   async cargar() {
     this.loading = true;
@@ -40,5 +44,9 @@ export class EstadosComponent {
 
   rutDisplay(rut_num: number) {
     return String(rut_num);
+  }
+
+  logout() {
+    this.auth.logout(true);
   }
 }

@@ -1,0 +1,52 @@
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at top, rgba(25, 118, 210, 0.12), transparent 55%);
+}
+
+.login-card {
+  width: min(520px, 95vw);
+}
+
+.tab-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 4px 6px;
+}
+
+.msg {
+  font-size: 13px;
+}
+.msg-error {
+  color: #b00020;
+}
+
+.public-result {
+  margin-top: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.public-meta {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.public-meta .label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.public-meta .value {
+  font-weight: 600;
+}
+
+.public-message {
+  font-size: 13px;
+}
+
+.w-100 {
+  width: 100%;
+}

@@ -30,6 +30,11 @@ export type ProcesoRow = {
   updated_at?: string | null;
 };
 
+export type EstadoPublico = {
+  mensaje_html?: string | null;
+  updated_at?: string | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private base = environment.apiBaseUrl;
@@ -71,5 +76,10 @@ export class ApiService {
       params,
       responseType: 'blob',
     });
+  }
+
+  estadoPublico(rut: string, periodo: number): Observable<EstadoPublico> {
+    const params = new HttpParams().set('rut', rut).set('periodo', String(periodo));
+    return this.http.get<EstadoPublico>(`${this.base}/proceso/estado-publico`, { params });
   }
 }
