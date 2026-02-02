@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -42,12 +42,14 @@ export class LoginComponent {
   publicBusy = false;
   publicError = '';
   publicData: EstadoPublico | null = null;
+  private parsedRutBase: string | null = null;
 
   constructor(
     private auth: AuthService,
     private api: ApiService,
     private router: Router,
     private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef,
   ) {
     if (this.auth.isLoggedIn) {
       this.router.navigate(['/']);
@@ -57,14 +59,14 @@ export class LoginComponent {
   async onLogin() {
     this.loginError = '';
     if (!this.user || !this.pass) {
-      this.loginError = 'Completa usuario y contraseña.';
+      this.loginError = 'Completa usuario y contrasena.';
       return;
     }
 
     this.loginBusy = true;
     try {
       await firstValueFrom(this.auth.login(this.user.trim(), this.pass));
-      this.snackBar.open('Sesión iniciada.', 'Cerrar', { duration: 3000 });
+      this.snackBar.open('Sesion iniciada.', 'Cerrar', { duration: 3000 });
       await this.router.navigate(['/']);
     } catch (e: any) {
       this.loginError = this.errMsg(e);
@@ -74,18 +76,18 @@ export class LoginComponent {
   }
 
   async onPublicQuery() {
-    this.publicError = '';
-    this.publicData = null;
-
-    const rutClean = this.rut.replace(/\D/g, '');
-    if (!rutClean) {
-      this.publicError = 'Ingresa un RUT válido.';
+    if (!this.parsedRutBase) {
+      this.publicError = 'Ingresa un RUT valido (sin puntos y con guion).';
+      this.cdr.markForCheck();
       return;
     }
 
+    this.publicError = '';
+    this.publicData = null;
+
     this.publicBusy = true;
     try {
-      this.publicData = await firstValueFrom(this.api.estadoPublico(rutClean, this.periodo));
+      this.publicData = await firstValueFrom(this.api.estadoPublico(this.parsedRutBase, this.periodo));
       if (!this.publicData) {
         this.publicError = 'Sin respuesta del servidor.';
       }
@@ -93,7 +95,79 @@ export class LoginComponent {
       this.publicError = this.errMsg(e);
     } finally {
       this.publicBusy = false;
+      this.cdr.markForCheck();
     }
+  }
+
+  onRutChange(value: string) {
+    const cleaned = value
+      .toUpperCase()
+      .replace(/[^0-9K]/g, '')
+      .slice(0, 9);
+
+    this.rut = this.formatRut(cleaned);
+    this.publicData = null;
+    this.parsedRutBase = null;
+
+    // Valida solo cuando el usuario termina de ingresar (7/8 digitos + DV).
+    if (cleaned.length < 8) {
+      this.publicError = '';
+      return;
+    }
+
+    const parsedRut = this.parseChileanRut(this.rut);
+    if (!parsedRut.ok) {
+      this.publicError = parsedRut.error;
+      return;
+    }
+
+    this.parsedRutBase = parsedRut.base;
+    this.publicError = '';
+  }
+
+  private formatRut(cleaned: string): string {
+    if (cleaned.length < 8) return cleaned;
+    return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
+  }
+
+  private parseChileanRut(rut: string): { ok: true; base: string } | { ok: false; error: string } {
+    const value = rut.trim().toUpperCase();
+    const match = /^(\d{7,8})-([\dK])$/.exec(value);
+
+    if (!match) {
+      return {
+        ok: false,
+        error: 'Ingresa el RUT sin puntos y con guion. Ej: 20348255-8',
+      };
+    }
+
+    const base = match[1];
+    const dv = match[2];
+    const expectedDv = this.computeRutDv(base);
+
+    if (dv !== expectedDv) {
+      return {
+        ok: false,
+        error: 'Digito verificador invalido para el RUT ingresado.',
+      };
+    }
+
+    return { ok: true, base };
+  }
+
+  private computeRutDv(base: string): string {
+    let sum = 0;
+    let multiplier = 2;
+
+    for (let i = base.length - 1; i >= 0; i--) {
+      sum += Number(base[i]) * multiplier;
+      multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+
+    const mod = 11 - (sum % 11);
+    if (mod === 11) return '0';
+    if (mod === 10) return 'K';
+    return String(mod);
   }
 
   private errMsg(e: any): string {

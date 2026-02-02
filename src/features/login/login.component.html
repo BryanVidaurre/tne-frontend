@@ -1,12 +1,44 @@
 <div class="login-shell">
   <mat-card class="login-card" appearance="outlined">
     <mat-card-header>
-      <mat-card-title>Portal TNE</mat-card-title>
-      <mat-card-subtitle>Acceso administrativo y consulta pública</mat-card-subtitle>
+      <mat-card-title>Portal TNE Universida de Tarapacá</mat-card-title>
     </mat-card-header>
 
     <mat-card-content>
       <mat-tab-group>
+        <mat-tab label="Consultar por RUT">
+          <form class="tab-body" (ngSubmit)="onPublicQuery()">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>RUT</mat-label>
+              <input
+                matInput
+                [(ngModel)]="rut"
+                (ngModelChange)="onRutChange($event)"
+                name="rut"
+                placeholder="Ej: 20348255-8"
+                maxlength="10"
+                pattern="^\\d{7,8}-[0-9Kk]$"
+              />
+              <mat-hint>Sin puntos y con guion.</mat-hint>
+            </mat-form-field>
+
+            <div *ngIf="publicError" class="msg msg-error">{{ publicError }}</div>
+
+            <button mat-raised-button color="primary" type="submit" [disabled]="publicBusy">
+              <mat-spinner *ngIf="publicBusy" diameter="18"></mat-spinner>
+              <span>{{ publicBusy ? 'Consultando...' : 'Consultar' }}</span>
+            </button>
+          </form>
+
+          <div *ngIf="publicData" class="public-result">
+            <div class="public-meta">
+              <div class="label">Última Actualización</div>
+              <div class="value">{{ publicData.updated_at || '-' }}</div>
+            </div>
+            <div class="public-message" [innerHTML]="publicData.mensaje_html || ''"></div>
+          </div>
+        </mat-tab>
+
         <mat-tab label="Ingresar">
           <form class="tab-body" (ngSubmit)="onLogin()">
             <mat-form-field appearance="outline" class="w-100">
@@ -15,7 +47,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="w-100">
-              <mat-label>Contraseña</mat-label>
+              <mat-label>Contraseñaa</mat-label>
               <input
                 matInput
                 type="password"
@@ -32,30 +64,6 @@
               <span>{{ loginBusy ? 'Ingresando...' : 'Ingresar' }}</span>
             </button>
           </form>
-        </mat-tab>
-
-        <mat-tab label="Consultar por RUT">
-          <form class="tab-body" (ngSubmit)="onPublicQuery()">
-            <mat-form-field appearance="outline" class="w-100">
-              <mat-label>RUT</mat-label>
-              <input matInput [(ngModel)]="rut" name="rut" placeholder="Ej: 12345678-9" />
-            </mat-form-field>
-
-            <div *ngIf="publicError" class="msg msg-error">{{ publicError }}</div>
-
-            <button mat-raised-button color="primary" type="submit" [disabled]="publicBusy">
-              <mat-spinner *ngIf="publicBusy" diameter="18"></mat-spinner>
-              <span>{{ publicBusy ? 'Consultando...' : 'Consultar' }}</span>
-            </button>
-          </form>
-
-          <div *ngIf="publicData" class="public-result">
-            <div class="public-meta">
-              <div class="label">Última actualización</div>
-              <div class="value">{{ publicData.updated_at || '-' }}</div>
-            </div>
-            <div class="public-message" [innerHTML]="publicData.mensaje_html || ''"></div>
-          </div>
         </mat-tab>
       </mat-tab-group>
     </mat-card-content>
