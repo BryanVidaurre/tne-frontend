@@ -15,8 +15,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
 
 import { AuthService } from '../../core/auth.service';
+import { EstadoPublico } from '../../core/api.service';
 
 declare const XLSX: {
   read(data: ArrayBuffer, opts: { type: string }): { SheetNames: string[]; Sheets: any };
@@ -48,6 +50,7 @@ type UiAlert = { type: AlertType; text: string };
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatTabsModule,
   ],
 })
 export class DashboardComponent {
@@ -84,6 +87,12 @@ export class DashboardComponent {
   busy: Partial<Record<ActionKey, boolean>> = {};
   statusText: Partial<Record<ActionKey, string>> = {};
   alert: UiAlert | null = null;
+
+  rut = '';
+  publicBusy = false;
+  publicError = '';
+  publicData: EstadoPublico | null = null;
+  private parsedRutBase: string | null = null;
 
   constructor(
     private api: ApiService,
@@ -527,5 +536,99 @@ export class DashboardComponent {
 
   logout() {
     this.auth.logout(true);
+  }
+
+  async onPublicQuery() {
+    if (!this.parsedRutBase) {
+      this.publicError = 'Ingresa un RUT valido (sin puntos y con guion).';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.publicError = '';
+    this.publicData = null;
+
+    this.publicBusy = true;
+    try {
+      this.publicData = await firstValueFrom(this.api.estadoPublico(this.parsedRutBase, this.periodo));
+      if (!this.publicData) {
+        this.publicError = 'Sin respuesta del servidor.';
+      }
+    } catch (e: any) {
+      this.publicError = this.errMsg(e);
+    } finally {
+      this.publicBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onRutChange(value: string) {
+    const cleaned = value
+      .toUpperCase()
+      .replace(/[^0-9K]/g, '')
+      .slice(0, 9);
+
+    this.rut = this.formatRut(cleaned);
+    this.publicData = null;
+    this.parsedRutBase = null;
+
+    if (cleaned.length < 8) {
+      this.publicError = '';
+      return;
+    }
+
+    const parsedRut = this.parseChileanRut(this.rut);
+    if (!parsedRut.ok) {
+      this.publicError = parsedRut.error;
+      return;
+    }
+
+    this.parsedRutBase = parsedRut.base;
+    this.publicError = '';
+  }
+
+  private formatRut(cleaned: string): string {
+    if (cleaned.length < 8) return cleaned;
+    return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
+  }
+
+  private parseChileanRut(rut: string): { ok: true; base: string } | { ok: false; error: string } {
+    const value = rut.trim().toUpperCase();
+    const match = /^(\d{7,8})-([\dK])$/.exec(value);
+
+    if (!match) {
+      return {
+        ok: false,
+        error: 'Ingresa el RUT sin puntos y con guion. Ej: 20348255-8',
+      };
+    }
+
+    const base = match[1];
+    const dv = match[2];
+    const expectedDv = this.computeRutDv(base);
+
+    if (dv !== expectedDv) {
+      return {
+        ok: false,
+        error: 'Digito verificador invalido para el RUT ingresado.',
+      };
+    }
+
+    return { ok: true, base };
+  }
+
+  private computeRutDv(base: string): string {
+    let sum = 0;
+    let multiplier = 2;
+
+    for (let i = base.length - 1; i >= 0; i--) {
+      sum += Number(base[i]) * multiplier;
+      multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+
+    const mod = 11 - (sum % 11);
+    if (mod === 11) return '0';
+    if (mod === 10) return 'K';
+    return String(mod);
   }
 }

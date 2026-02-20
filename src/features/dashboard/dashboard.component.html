@@ -5,33 +5,20 @@
       <div class="periodo">
         <mat-form-field appearance="outline" class="w-100">
           <mat-label>Periodo</mat-label>
-          <input
-            matInput
-            type="number"
-            [(ngModel)]="periodo"
-            [disabled]="isBusy('subir_todo', 'recalcular', 'enviar', 'descargar')"
-          />
+          <input matInput type="number" [(ngModel)]="periodo"
+            [disabled]="isBusy('subir_todo', 'recalcular', 'enviar', 'descargar')" />
           <mat-hint>Ej: {{ currentYear }}</mat-hint>
         </mat-form-field>
       </div>
 
       <div class="hero-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="enviarCorreos()"
-          [disabled]="isBusy('enviar')"
-        >
+        <button mat-raised-button color="primary" (click)="enviarCorreos()" [disabled]="isBusy('enviar')">
           <mat-spinner *ngIf="busy.enviar" diameter="18"></mat-spinner>
           <span>{{ busy.enviar ? 'Enviando correos...' : 'Enviar correos' }}</span>
         </button>
 
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="descargarReporte()"
-          [disabled]="isBusy('descargar', 'subir_todo')"
-        >
+        <button mat-raised-button color="primary" (click)="descargarReporte()"
+          [disabled]="isBusy('descargar', 'subir_todo')">
           <mat-spinner *ngIf="busy.descargar" diameter="18"></mat-spinner>
           <span>{{ busy.descargar ? 'Generando reporte...' : 'Descargar reporte' }}</span>
         </button>
@@ -49,166 +36,140 @@
   </mat-card>
 </section>
 
-<div class="main-grid">
-  <mat-card class="left" appearance="outlined">
-    <mat-card-header>
-      <mat-card-title>Subida de archivos</mat-card-title>
-      <mat-card-subtitle>
-        <span *ngIf="busy.subir_todo" class="inline-status">
-          <mat-spinner diameter="16"></mat-spinner>
-          <span>Ejecutando...</span>
-        </span>
-      </mat-card-subtitle>
-    </mat-card-header>
+<mat-tab-group class="admin-tabs">
+  <mat-tab label="Panel">
+    <div class="tab-body">
+      <div class="main-grid">
+        <mat-card class="left" appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Subida de archivos</mat-card-title>
+            <mat-card-subtitle>
+              <span *ngIf="busy.subir_todo" class="inline-status">
+                <mat-spinner diameter="16"></mat-spinner>
+                <span>Ejecutando...</span>
+              </span>
+            </mat-card-subtitle>
+          </mat-card-header>
 
-    <mat-divider></mat-divider>
+          <mat-divider></mat-divider>
 
-    <mat-card-content class="upload-stack">
-      <div class="upload-panel" *ngFor="let tipo of tipos">
-        <div class="panel-head">
-          <div class="panel-title">
-            <div class="label">{{ pretty(tipo) }}</div>
-          </div>
+          <mat-card-content class="upload-stack">
+            <div class="upload-panel" *ngFor="let tipo of tipos">
+              <div class="panel-head">
+                <div class="panel-title">
+                  <div class="label">{{ pretty(tipo) }}</div>
+                </div>
 
-          <mat-chip
-            class="status-chip"
-            [ngClass]="{
-              'chip-error': !!getFileError(tipo),
-              'chip-ready': !!getFile(tipo) && !getFileError(tipo),
-            }"
-          >
-            <mat-icon *ngIf="getFileError(tipo)">error</mat-icon>
-            <mat-icon *ngIf="getFile(tipo) && !getFileError(tipo)">check_circle</mat-icon>
-            <mat-icon *ngIf="!getFile(tipo)">schedule</mat-icon>
-            {{ getFileError(tipo) ? 'Error' : getFile(tipo) ? 'Listo' : 'Pendiente' }}
-          </mat-chip>
-        </div>
+                <mat-chip class="status-chip" [ngClass]="{
+                    'chip-error': !!getFileError(tipo),
+                    'chip-ready': !!getFile(tipo) && !getFileError(tipo),
+                  }">
+                  <mat-icon *ngIf="getFileError(tipo)">error</mat-icon>
+                  <mat-icon *ngIf="getFile(tipo) && !getFileError(tipo)">check_circle</mat-icon>
+                  <mat-icon *ngIf="!getFile(tipo)">schedule</mat-icon>
+                  {{ getFileError(tipo) ? 'Error' : getFile(tipo) ? 'Listo' : 'Pendiente' }}
+                </mat-chip>
+              </div>
 
-        <div class="panel-body">
-          <div class="file-row">
-            <input
-              #fileInput
-              class="file-hidden"
-              type="file"
-              (change)="onFile(tipo, $event)"
-              [disabled]="isBusy('subir_todo', tipo)"
-            />
+              <div class="panel-body">
+                <div class="file-row">
+                  <input #fileInput class="file-hidden" type="file" (change)="onFile(tipo, $event)"
+                    [disabled]="isBusy('subir_todo', tipo)" />
 
-            <button
-              mat-stroked-button
-              color="primary"
-              type="button"
-              (click)="fileInput.click()"
-              [disabled]="isBusy('subir_todo', tipo)"
-            >
-              <mat-icon>upload_file</mat-icon>
-              Seleccionar Excel
-            </button>
+                  <button mat-stroked-button color="primary" type="button" (click)="fileInput.click()"
+                    [disabled]="isBusy('subir_todo', tipo)">
+                    <mat-icon>upload_file</mat-icon>
+                    Seleccionar Excel
+                  </button>
 
-            <button
-              mat-icon-button
-              type="button"
-              matTooltip="Quitar archivo"
-              (click)="clearFile(tipo, fileInput)"
-              [disabled]="!getFile(tipo) || isBusy('subir_todo', tipo)"
-            >
-              <mat-icon>close</mat-icon>
-            </button>
+                  <button mat-icon-button type="button" matTooltip="Quitar archivo" (click)="clearFile(tipo, fileInput)"
+                    [disabled]="!getFile(tipo) || isBusy('subir_todo', tipo)">
+                    <mat-icon>close</mat-icon>
+                  </button>
 
-            <div class="file-meta" *ngIf="getFile(tipo)">
-              <div class="file-name">{{ getFileName(tipo) }}</div>
-              <div class="file-hint">Listo para subir</div>
+                  <div class="file-meta" *ngIf="getFile(tipo)">
+                    <div class="file-name">{{ getFileName(tipo) }}</div>
+                    <div class="file-hint">Listo para subir</div>
+                  </div>
+                </div>
+
+                <div class="req">
+                  <div class="req-title">Columnas requeridas</div>
+                  <mat-chip-set class="chipset">
+                    <mat-chip *ngFor="let h of getRequiredHeaders(tipo)" disableRipple>{{ h }}</mat-chip>
+                  </mat-chip-set>
+                </div>
+
+                <div class="err" *ngIf="getFileError(tipo)">
+                  <mat-icon>warning</mat-icon>
+                  <span>{{ getFileError(tipo) }}</span>
+                </div>
+
+              </div>
             </div>
-          </div>
 
-          <div class="req">
-            <div class="req-title">Columnas requeridas</div>
-            <mat-chip-set class="chipset">
-              <mat-chip *ngFor="let h of getRequiredHeaders(tipo)" disableRipple>{{ h }}</mat-chip>
-            </mat-chip-set>
-          </div>
+            <mat-divider></mat-divider>
 
-          <div class="err" *ngIf="getFileError(tipo)">
-            <mat-icon>warning</mat-icon>
-            <span>{{ getFileError(tipo) }}</span>
-          </div>
+            <div class="footer">
+              <div class="order">
+                <div class="muted">Orden recomendado</div>
+                <div class="steps">Matrícula → Pagos → JUNAEB → Invitados → Asistentes</div>
+              </div>
 
-          <div class="panel-actions">
-            <button
-              mat-raised-button
-              color="accent"
-              type="button"
-              (click)="upload(tipo)"
-              [disabled]="isUploadingBlocked(tipo) || !getFile(tipo)"
-            >
-              <mat-spinner *ngIf="isTipoBusy(tipo)" diameter="18"></mat-spinner>
-              <span>{{ isTipoBusy(tipo) ? 'Subiendo...' : 'Subir' }}</span>
-            </button>
-          </div>
-        </div>
+              <button mat-raised-button color="primary" type="button" (click)="subirTodoYCalcular()" [disabled]="
+                  isBusy(
+                    'subir_todo',
+                    'recalcular',
+                    'enviar',
+                    'descargar',
+                    'matricula',
+                    'pagos',
+                    'junaeb',
+                    'invitados',
+                    'asistentes'
+                  )
+                ">
+                <mat-spinner *ngIf="busy.subir_todo" diameter="18"></mat-spinner>
+                <span>{{ busy.subir_todo ? 'Procesando...' : 'Subir todo y calcular' }}</span>
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="right" appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Consulta de estado TNE</mat-card-title>
+            <mat-card-subtitle>Busca por RUT sin puntos y con guion</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-divider></mat-divider>
+
+          <mat-card-content>
+            <form class="public-form" (ngSubmit)="onPublicQuery()">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>RUT</mat-label>
+                <input matInput [(ngModel)]="rut" (ngModelChange)="onRutChange($event)" name="rut"
+                  placeholder="Ej: 20348255-8" maxlength="10" pattern="^\\d{7,8}-[0-9Kk]$" />
+                <mat-hint>Sin puntos y con guion.</mat-hint>
+              </mat-form-field>
+
+              <div *ngIf="publicError" class="msg msg-error">{{ publicError }}</div>
+
+              <button mat-raised-button color="primary" type="submit" [disabled]="publicBusy">
+                <mat-spinner *ngIf="publicBusy" diameter="18"></mat-spinner>
+                <span>{{ publicBusy ? 'Consultando...' : 'Consultar' }}</span>
+              </button>
+            </form>
+
+            <div *ngIf="publicData" class="public-result">
+              <div class="public-meta">
+                <div class="label">Última Actualización</div>
+                <div class="value">{{ publicData.updated_at || '-' }}</div>
+              </div>
+              <div class="public-message" [innerHTML]="publicData.mensaje_html || ''"></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
-
-      <mat-divider></mat-divider>
-
-      <div class="footer">
-        <div class="order">
-          <div class="muted">Orden recomendado</div>
-          <div class="steps">Matrícula → Pagos → JUNAEB → Invitados → Asistentes</div>
-        </div>
-
-        <button
-          mat-raised-button
-          color="primary"
-          type="button"
-          (click)="subirTodoYCalcular()"
-          [disabled]="
-            isBusy(
-              'subir_todo',
-              'recalcular',
-              'enviar',
-              'descargar',
-              'matricula',
-              'pagos',
-              'junaeb',
-              'invitados',
-              'asistentes'
-            )
-          "
-        >
-          <mat-spinner *ngIf="busy.subir_todo" diameter="18"></mat-spinner>
-          <span>{{ busy.subir_todo ? 'Procesando...' : 'Subir todo y calcular' }}</span>
-        </button>
-      </div>
-    </mat-card-content>
-  </mat-card>
-
-  <mat-card class="right" appearance="outlined">
-    <mat-card-header>
-      <mat-card-title>Actividad reciente</mat-card-title>
-      <mat-card-subtitle>Resultados de acciones y validaciones</mat-card-subtitle>
-    </mat-card-header>
-
-    <mat-divider></mat-divider>
-
-    <mat-card-content class="results">
-      <div *ngIf="results.length === 0" class="empty">
-        <mat-icon>description</mat-icon>
-        <div>Sin acciones aún.</div>
-        <div class="muted">Sube tu primer archivo para ver resultados aquí.</div>
-      </div>
-
-      <div *ngFor="let r of results" class="result-item">
-        <div class="result-head">
-          <div class="result-title">
-            <strong>{{ pretty(r.tipo) }}</strong>
-          </div>
-          <mat-chip [ngClass]="{ 'chip-ready': r.ok, 'chip-error': !r.ok }">
-            <mat-icon>{{ r.ok ? 'check_circle' : 'error' }}</mat-icon>
-            {{ r.ok ? 'OK' : 'Error' }}
-          </mat-chip>
-        </div>
-        <pre class="result-body">{{ r.message }}</pre>
-      </div>
-    </mat-card-content>
-  </mat-card>
-</div>
+    </div>
+  </mat-tab>

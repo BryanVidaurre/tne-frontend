@@ -231,3 +231,51 @@
 .w-100 {
   width: 100%;
 }
+
+.admin-tabs {
+  margin-top: 8px;
+}
+
+.tab-body {
+  padding: 16px 4px 6px;
+}
+
+.public-card {
+  max-width: 640px;
+}
+
+.public-form {
+  display: grid;
+  gap: 12px;
+}
+
+.msg {
+  font-size: 13px;
+}
+.msg-error {
+  color: #b00020;
+}
+
+.public-result {
+  margin-top: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.public-meta {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.public-meta .label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.public-meta .value {
+  font-weight: 600;
+}
+
+.public-message {
+  font-size: 13px;
+}
